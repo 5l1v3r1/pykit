@@ -47,6 +47,504 @@ community, with a focus on array-oriented numerical code.</p>
 </code></pre>
 
 <p>pykit is inspired by VMKit and LLVM.</p>
+
+<hr><hr><p>% Pykit pipeline
+% 
+% </p>
+
+<p>The input to pykit is a typed program in the form of a Module,
+consisting of a set of functions, global variables and external symbols.</p>
+
+<p>The functions within the module go through successive transformations or
+stages defined by the pipeline. We can categorize stages as follows
+(similar to parakeet):</p>
+
+<blockquote>
+<ul>
+<li>  High-level optimizations and analyses</li>
+<li>  Lowering and scalarization</li>
+<li>  Codegen</li>
+</ul>
+</blockquote>
+
+<p>Every stage in the pipeline is optional. The order is configurable.
+Entire stages can be skipped or overridden.</p>
+
+<h1>
+<a name="high-level-optimizations-and-analyses" class="anchor" href="#high-level-optimizations-and-analyses"><span class="octicon octicon-link"></span></a>High-level Optimizations and Analyses</h1>
+
+<p>Transformations:</p>
+
+<blockquote>
+<ul>
+<li>  SSA/mem2reg</li>
+<li>  Transform unary/binary operations on arrays to map</li>
+<li>  fusion of map/reduce/scan</li>
+</ul>
+</blockquote>
+
+<p>Optimizations and analyses include:</p>
+
+<blockquote>
+<ul>
+<li>  (sparse conditional) constant propagation</li>
+<li>  Container vectorization (<code>list_append -&gt; map</code>)</li>
+<li>  Purity analysis</li>
+<li>  Escape analysis</li>
+<li>  Partial redundancy elimination</li>
+<li>  Scalar replacement</li>
+<li>  Bounds check, wrap around, None check elimination</li>
+<li>  Optimize cell variables with static binding</li>
+<li>  Loop fusion (temporary elimination)</li>
+<li>  Inlining</li>
+<li>  Exception analysis</li>
+</ul>
+</blockquote>
+
+<p>We need to perform these analyses on high-level code, since subsequent
+lowering transformations will reduce or preclude the effectiveness.</p>
+
+<p>For example optimizations pykit should do, see :ref:`optimizations`.</p>
+
+<h1>
+<a name="lowering-and-specialization" class="anchor" href="#lowering-and-specialization"><span class="octicon octicon-link"></span></a>Lowering and Specialization</h1>
+
+<p>These stages specialize to a type representation and a runtime. Default
+stages lower to a provided pykit :ref:`runtime`.</p>
+
+<blockquote>
+<ul>
+<li>  Scalarization <code>map -&gt; for</code>
+</li>
+<li>  Expand sum type operations</li>
+<li>  Data and object allocation (based on escape analysis)</li>
+<li>  Lower container operations</li>
+<li>  Lower Thread API into runtime calls</li>
+<li>  Lower cell variable allocation and storage/loading</li>
+<li>
+<p>Lower type conversion...</p>
+
+<blockquote>
+<ul>
+<li>  Internal representation</li>
+<li>  CPython C API</li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>Lower object operations</p>
+
+<blockquote>
+<ul>
+<li>  CPython C API</li>
+<li>  Some user pass</li>
+<li>  Error</li>
+</ul>
+</blockquote>
+</li>
+<li>
+<p>Lower virtual method calls / virtual attribute access</p>
+
+<blockquote>
+<ul>
+<li>  Actual vtable lookup should be deferred to a user provided
+pass</li>
+</ul>
+</blockquote>
+</li>
+<li><p>Refcounting or GC pass</p></li>
+<li>
+<p>Lower exception handling code</p>
+
+<blockquote>
+<ul>
+<li>  zero cost</li>
+<li>  setjmp/longjump</li>
+<li>  error return codes</li>
+</ul>
+</blockquote>
+</li>
+</ul>
+<h1>
+<a name="codegen" class="anchor" href="#codegen"><span class="octicon octicon-link"></span></a>Codegen</h1>
+</blockquote>
+
+<p>The code is in a low-level format by now, and can be easily used to
+generate code from. We are left with:</p>
+
+<blockquote>
+<ul>
+<li>  Scalars operations (int, float, pointer, function)</li>
+<li>  Aggregate accesses (struct, union)</li>
+<li>  Scalar conversions and pointer casts</li>
+<li>  Memory operations (load, store)</li>
+<li>  Control flow (branch, conditional branch, return, exceptions)</li>
+<li>  Function calls</li>
+<li>  phi</li>
+<li>  Constants
+% Pykit Runtime
+% 
+% </li>
+</ul>
+</blockquote>
+
+<p>Pykit comes with a default runtime, that supports the following:</p>
+
+<blockquote>
+<ul>
+<li>
+<p>Boxed structures with an internal format</p>
+
+<blockquote>
+<ul>
+<li>  (atomically) reference counted or GCed</li>
+</ul>
+</blockquote>
+</li>
+<li><p>Conversion between internal representations and Python objects</p></li>
+<li><p>A portable thread API</p></li>
+<li><p>A memory allocator</p></li>
+</ul>
+<p>All these parts are optional and can be ignored. For instance one can
+disallow dynamic memory allocation, or provide a different
+implementation simply by writing a different lowering pass or linking
+with a different library exposing the same API.
+% Example Optimizations
+% 
+% </p>
+</blockquote>
+
+<p>What follows are some example transformations pykit should be able to
+handle in the future.</p>
+
+<h1>
+<a name="aggregates" class="anchor" href="#aggregates"><span class="octicon octicon-link"></span></a>Aggregates</h1>
+
+<p>Stack allocation:</p>
+
+<div class="highlight"><pre><span class="n">t</span> <span class="o">=</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="c"># escape = { 't': [] }</span>
+<span class="c"># --&gt; (struct converion and stack allocation)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">new_struct</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span> <span class="c"># stack allocation through escape info</span>
+</pre></div>
+
+<hr><p>Stack allocation + Inlining:</p>
+
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">g</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="c"># escape = { 't': ['return'] }</span>
+    <span class="k">return</span> <span class="n">t</span>
+
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># --&gt; (struct conversion)</span>
+
+<span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">new_struct</span><span class="p">(</span><span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">g</span><span class="p">(</span><span class="n">y</span><span class="p">))</span> <span class="c"># escape = { 't': ['return'] }</span>
+    <span class="k">return</span> <span class="n">t</span>                   <span class="c"># inlining beneficial to remove temporary</span>
+
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="c"># --&gt; (inlining)</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">new_struct</span><span class="p">(</span><span class="n">g</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">g</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">t</span>
+
+<span class="c"># --&gt; (redundancy elimination)</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+
+<h1>
+<a name="arrays" class="anchor" href="#arrays"><span class="octicon octicon-link"></span></a>Arrays</h1>
+
+<p>Element-wise:</p>
+
+<div class="highlight"><pre><span class="n">result</span> <span class="o">=</span> <span class="n">A</span> <span class="o">+</span> <span class="n">B</span> <span class="o">*</span> <span class="n">C</span>
+<span class="c"># --&gt;</span>
+<span class="nb">map</span><span class="p">(</span><span class="n">add</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="n">mul</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">))</span>
+<span class="c"># --&gt; (fusion)</span>
+<span class="nb">map</span><span class="p">(</span><span class="n">composed_add_mul</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>
+<span class="c"># -&gt; map(fma, A, B, C) -- llvm will figure this out</span>
+</pre></div>
+
+<hr><p>Reductions:</p>
+
+<div class="highlight"><pre><span class="nb">reduce</span><span class="p">(</span><span class="n">add</span><span class="p">,</span> <span class="n">A</span> <span class="o">+</span> <span class="n">B</span><span class="p">)</span>
+<span class="c"># --&gt;</span>
+<span class="nb">reduce</span><span class="p">(</span><span class="n">add</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="n">add</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">))</span>
+<span class="c"># --&gt;</span>
+<span class="nb">reduce</span><span class="p">(</span><span class="n">add_add</span><span class="p">,</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">])</span>
+</pre></div>
+
+<hr><p>Parallelism:</p>
+
+<div class="highlight"><pre><span class="nb">map</span><span class="p">(</span><span class="n">pure_function</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+<span class="c"># --&gt;</span>
+<span class="n">parallel_map</span><span class="p">(</span><span class="n">pure_function</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+</pre></div>
+
+<hr><p>Order specialization:</p>
+
+<div class="highlight"><pre><span class="n">A</span> <span class="o">=</span> <span class="o">...</span> <span class="c"># order = C</span>
+<span class="n">B</span> <span class="o">=</span> <span class="o">...</span> <span class="c"># order = F</span>
+<span class="n">A</span> <span class="o">+</span> <span class="n">B</span>
+<span class="c"># --&gt;</span>
+<span class="n">tiled_map</span><span class="p">(</span><span class="n">add</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+</pre></div>
+
+<hr><p>MKL:</p>
+
+<div class="highlight"><pre><span class="n">sqrt</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="c"># --&gt;</span>
+<span class="nb">map</span><span class="p">(</span><span class="n">sqrt</span><span class="p">,</span> <span class="n">A</span><span class="p">)</span>
+<span class="c"># --&gt;</span>
+<span class="nb">map</span><span class="p">(</span><span class="n">vsSqrt</span><span class="p">,</span> <span class="n">A</span><span class="p">[:,</span> <span class="p">::</span><span class="n">blocksize</span><span class="p">])</span>
+</pre></div>
+
+<hr><p>Bounds checking:</p>
+
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="n">t</span>        <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>     <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+
+<span class="c"># --&gt; (add bounds checking)</span>
+
+<span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t</span>        <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>     <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+
+<span class="c"># --&gt; (elimination)</span>
+
+<span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">i</span>
+    <span class="k">assert</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t</span>        <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>     <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+</pre></div>
+
+<hr><p>Wrap-around elimination:</p>
+
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="n">t</span>        <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>     <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+
+<span class="c"># --&gt; (add wrap around)</span>
+
+<span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="n">idx0</span> <span class="o">=</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">idx0</span><span class="p">]</span>
+
+    <span class="n">idx1</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">idx2</span> <span class="o">=</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">idx2</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span>
+
+    <span class="n">idx1</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+
+<span class="c"># --&gt; (elimination)</span>
+
+<span class="k">def</span> <span class="nf">swap</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+    <span class="n">idx0</span> <span class="o">=</span> <span class="n">i</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">idx1</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">idx0</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">idx0</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span>
+    <span class="n">A</span><span class="p">[</span><span class="n">idx1</span><span class="p">]</span> <span class="o">=</span> <span class="n">t</span>
+</pre></div>
+
+<h1>
+<a name="containers" class="anchor" href="#containers"><span class="octicon octicon-link"></span></a>Containers</h1>
+
+<p>List loop fusion:</p>
+
+<div class="highlight"><pre><span class="n">L</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">i</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c"># --&gt; (vectorize)</span>
+
+<span class="n">L</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">square</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>  <span class="c"># lazy=True since square is pure</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c"># --&gt; (fusion)</span>
+
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">i</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+
+<p>Or perhaps:</p>
+
+<div class="highlight"><pre><span class="n">L</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="n">i</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">L</span><span class="p">:</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c"># --&gt; (vectorize)</span>
+
+<span class="n">L</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">square</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>  <span class="c"># lazy=True, uses=[_]</span>
+<span class="n">_</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">use</span><span class="p">,</span> <span class="n">L</span><span class="p">)</span>             <span class="c"># lazy=False, uses=[]</span>
+
+<span class="c"># --&gt; (fusion)</span>
+
+<span class="nb">map</span><span class="p">(</span><span class="n">compose</span><span class="p">(</span><span class="n">use</span><span class="p">,</span> <span class="n">square</span><span class="p">),</span> <span class="n">L</span><span class="p">)</span> <span class="c"># lazy=is_pure(use)</span>
+</pre></div>
+
+<hr><p>Redundancy elimination:</p>
+
+<div class="highlight"><pre><span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">L</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+<span class="c"># --&gt;</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">x</span>
+</pre></div>
+
+<hr><p>Preallocation:</p>
+
+<div class="highlight"><pre><span class="n">L</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+    <span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c"># --&gt;</span>
+
+<span class="n">L</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># preallocate = N</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+    <span class="n">L</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+
+<hr><p>List consumption:</p>
+
+<div class="highlight"><pre><span class="n">L</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">]</span>
+<span class="k">while</span> <span class="n">L</span><span class="p">:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">L</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c"># no further uses of L</span>
+
+<span class="c"># --&gt;</span>
+
+<span class="n">L</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lst</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">L</span><span class="p">):</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c"># --&gt; (if f has no side-effects)</span>
+
+<span class="k">for</span> <span class="n">tmp</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+    <span class="n">use</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+
+<hr><p>Inlining and fusion:</p>
+
+<div class="highlight"><pre><span class="k">def</span> <span class="nf">split</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">begin</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">begin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">[</span><span class="n">begin</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+        <span class="n">begin</span> <span class="o">=</span> <span class="n">end</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result</span> <span class="c"># escape={'result': ['return'], 'str': ['find', 'len']}</span>
+
+<span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">split</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s">" "</span><span class="p">):</span> <span class="c"># inlining beneficial to remove temporary</span>
+        <span class="n">use</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+
+<span class="c"># --&gt; (inlining)</span>
+
+<span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">begin</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">begin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">[</span><span class="n">begin</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+        <span class="n">begin</span> <span class="o">=</span> <span class="n">end</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+        <span class="n">use</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+
+<span class="c"># --&gt; (fusion)</span>
+
+<span class="k">def</span> <span class="nf">somefunc</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">begin</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">while</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">find</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sep</span><span class="p">,</span> <span class="n">begin</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">end</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="nb">str</span><span class="p">[</span><span class="n">begin</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+        <span class="n">begin</span> <span class="o">=</span> <span class="n">end</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">sep</span><span class="p">)</span>
+
+        <span class="n">part</span> <span class="o">=</span> <span class="n">tmp</span>
+        <span class="n">use</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+</pre></div>
+
+<hr><p>% FAQ
+% 
+% </p>
+
+<h1>
+<a name="why-this-project" class="anchor" href="#why-this-project"><span class="octicon octicon-link"></span></a>Why this project?</h1>
+
+<p>The motivation for this project is an ever growing number of compilers
+for Python out there. Pykit tries to provide a higher-level layer than
+LLVM or C for typed Python code, focussing on numeric code, so that
+optimizations and runtime improvements benefit everyone.</p>
+
+<p>It aims to be reusable for projects including:</p>
+
+<blockquote>
+<ul>
+<li>  Numba</li>
+<li>  Parakeet</li>
+<li>  Pythran</li>
+<li>  Theano</li>
+<li>  NumbaPro</li>
+<li>  Your next awesome compiler</li>
+</ul>
+</blockquote>
+
+<p>If something in pykit somehow precludes reuse in any of the above
+projects, then pykit has failed and we need to fix that.</p>
+
+<h1>
+<a name="why-not-llvm-ir" class="anchor" href="#why-not-llvm-ir"><span class="octicon octicon-link"></span></a>Why not LLVM IR?</h1>
+
+<p>Why not directly use LLVM IR for the internal format? There are pros and
+cons to doing that, below are some reasons why not to:</p>
+
+<blockquote>
+<ul>
+<li>  Completeness, we can encode all high-level constructs directly in
+the way we wish, without naming schemes, LLVM metadata, or
+external data</li>
+<li>  Instruction polymorphism the way we want it</li>
+<li>  High-level types, such as arrays, complex numbers, objects,
+partial functions etc, without opague type mappings</li>
+<li>  Simple arbitrary metadata through a key/value mechanism</li>
+<li>  No aborting, ever</li>
+</ul>
+</blockquote>
       </section>
     </div>
 
