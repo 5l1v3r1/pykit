@@ -213,12 +213,12 @@ class Translator(object):
 
     # __________________________________________________________________
 
-    def op_getfield(self, op, struct, attr):
+    def op_extractfield(self, op, struct, attr):
         struct_type = op.args[0].type
         index = struct_type.names.index(attr)
         return self.builder.extract_value(struct, index, op.result)
 
-    def op_setfield(self, op, struct, attr, value):
+    def op_insertfield(self, op, struct, attr, value):
         struct_type = op.args[0].type
         index = struct_type.names.index(attr)
         return self.builder.insert_value(struct, value, index, op.result)

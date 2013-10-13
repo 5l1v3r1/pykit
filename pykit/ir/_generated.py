@@ -275,6 +275,27 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
+    def extractfield(self, type, value0, obj0, **kwds):
+        assert isinstance(value0, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('extractfield', type, [value0, obj0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def insertfield(self, type, value0, obj0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('insertfield', type, [value0, obj0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
     def add(self, type, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)

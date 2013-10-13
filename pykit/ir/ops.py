@@ -129,6 +129,12 @@ getfield           = op('getfield/vo')        # (expr value, str attr)
 setfield           = op('setfield/vov')       # (expr value, str attr, expr value)
 
 # ______________________________________________________________________
+# Insert field
+
+extractfield       = op('extractfield/vo')
+insertfield        = op('insertfield/vov')
+
+# ______________________________________________________________________
 # Basic operators
 
 # Binary
