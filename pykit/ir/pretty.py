@@ -63,6 +63,10 @@ def ftype(val):
     from pykit import types
     if hashable(val) and val in types.type2name:
         return types.type2name[val]
+    if val.is_struct:
+        args = ", ".join('%s:%s' % (name, ty)
+                         for name, ty in zip(val.names, val.types))
+        return '{ %s }' % args
     return str(val)
 
 
