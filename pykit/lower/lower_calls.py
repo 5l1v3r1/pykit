@@ -37,11 +37,14 @@ class ExceptionChecking(FunctionPass):
     def _handle_raise(self, op, badval, exc):
         "Raise an exception if retval == badval"
         assert badval is not None
-        cond = self.builder.eq(types.Bool, [op, badval])
+        if badval.type != op.type:
+            badval = self.builder.convert(op.type, badval)
+        cond = self.builder.eq(op, badval)
+        # TODO: Finish
         with self.builder.if_(cond):
             msg = op.metadata.get("exc.msg")
-            args = [Const(msg)] if msg is not None else []
-            exc = self.builder.new_exc(types.Exception, [exc] + args)
+            args = [Const(msg)] if msg is not None else [Const("")]
+            exc = self.builder.new_exc(types.Exception, exc, *args)
             self.builder.exc_throw(exc)
 
 # call virtual

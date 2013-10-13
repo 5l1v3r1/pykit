@@ -97,8 +97,7 @@ def insert_phis(func, cfg, allocas):
         if len(cfg.predecessors(block)) > 1:
             with builder.at_front(block):
                 for alloca in allocas:
-                    args = [[], []] # predecessors, incoming_values
-                    phi = builder.phi(alloca.type.base, args)
+                    phi = builder.phi(alloca.type.base, [], [])
                     phis[phi] = alloca
 
     return phis

@@ -13,7 +13,7 @@ def lower_fields(func, env=None):
         if op.opcode in ("getfield", "setfield") and op.args[0].type.is_pointer:
             b.position_before(op)
             p = op.args[0]
-            load = b.load(p.type.base, [p])
+            load = b.load(p)
             args = [load] + op.args[1:]
             op.set_args(args)
 

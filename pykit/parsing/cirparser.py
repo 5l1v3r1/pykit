@@ -186,12 +186,15 @@ class PykitIRVisitor(c_ast.NodeVisitor):
             with self.builder.at_front(self.func.startblock):
                 type = types.Pointer(self.local_vars[varname])
                 result = self.func.temp(varname)
-                self.allocas[varname] = self.builder.alloca(type, [], result)
+                self.allocas[varname] = self.builder.alloca(type, result=result)
 
         return self.allocas[varname]
 
     def assignvar(self, varname, rhs):
-        self.builder.store(rhs, self.alloca(varname))
+        var = self.alloca(varname)
+        if rhs.type != var.type.base:
+            rhs = self.builder.convert(var.type.base, rhs)
+        self.builder.store(rhs, var)
 
     def assign(self, varname, rhs):
         if self.in_function:
@@ -299,21 +302,21 @@ class PykitIRVisitor(c_ast.NodeVisitor):
                         "(add a cast or assignment)")
         elif not hasattr(self.builder, opcode):
             if opcode in self.mod.functions:
-                return self.builder.call(type, [self.mod.get_function(opcode),
-                                                args])
+                func = self.mod.get_function(opcode)
+                return self.builder.call(type, func, args)
             error(node, "No opcode %s" % (opcode,))
 
         buildop = getattr(self.builder, opcode)
         if ops.is_void(opcode):
             return buildop(*args)
         else:
-            return buildop(type or "Unset", args)
+            return buildop(type or types.Opaque, *args)
 
     def visit_ID(self, node):
         if self.in_function:
             if node.name in self.local_vars:
                 result = self.alloca(node.name)
-                return self.builder.load(result.type.base, [result])
+                return self.builder.load(result)
 
             global_val = (self.mod.get_function(node.name) or
                           self.mod.get_global(node.name))
@@ -333,7 +336,7 @@ class PykitIRVisitor(c_ast.NodeVisitor):
             result = self.visit(node.expr)
             if result.type == type:
                 return result
-            return self.builder.convert(type, [result])
+            return self.builder.convert(type, result)
 
     def visit_Assignment(self, node):
         if node.op != '=':
@@ -353,20 +356,13 @@ class PykitIRVisitor(c_ast.NodeVisitor):
         op = defs.unary_defs[node.op]
         buildop = getattr(self.builder, op)
         arg = self.visit(node.expr)
-        type = self.type or arg.type
-        return buildop(type, [arg])
+        return buildop(arg)
 
     def visit_BinaryOp(self, node):
         op = binary_defs[node.op]
         buildop = getattr(self.builder, op)
         left, right = self.visits([node.left, node.right])
-        type = self.type
-        if not type:
-            l, r = map(types.resolve_typedef, [left.type, right.type])
-            assert l == r, (l, r)
-        if node.op in defs.compare_defs:
-            type = types.Bool
-        return buildop(type or left.type, [left, right])
+        return buildop(left, right)
 
     def visit_If(self, node):
         cond = self.visit(node.cond)
@@ -415,8 +411,7 @@ class PykitIRVisitor(c_ast.NodeVisitor):
     def visit_Return(self, node):
         b = self.builder
         value = self.visit(node.expr)
-        t = self.func.temp
-        b.ret(b.convert(self.func.type.restype, [value]))
+        b.ret(b.convert(self.func.type.restype, value))
 
 debug_args = dict(lex_optimize=False, yacc_optimize=False, yacc_debug=True)
 

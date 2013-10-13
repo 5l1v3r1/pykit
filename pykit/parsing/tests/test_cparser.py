@@ -6,15 +6,17 @@ from pykit.parsing import cirparser
 from pykit.ir import verify, interp
 
 source = """
-int myglobal = 10;
+#include <pykit_ir.h>
 
-int myfunc(float x) {
-    int y;
-    int i = 10;
+Int32 myglobal = 10;
+
+Int32 myfunc(float x) {
+    Int32 y;
+    Int32 i = 10;
 
     y = 4;
     while (y < i) {
-        y = (int) y + 1;
+        y = (Int32) y + 1;
         (void) print(myglobal);
     }
 
@@ -29,3 +31,7 @@ class TestParser(unittest.TestCase):
         func = mod.get_function('myfunc')
         result = interp.run(func, args=[10.0])
         self.assertEqual(result, 12)
+
+
+if __name__ == '__main__':
+    unittest.main()

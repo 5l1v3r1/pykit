@@ -32,7 +32,8 @@ class TestInlining(unittest.TestCase):
         verify(func)
         assert interp.run(func, args=[10]) == 100
         assert len(list(func.blocks)) == 1
-        assert opcodes(func) == ['mul', 'ret']
+        self.assertEqual([o for o in opcodes(func) if o != 'convert'],
+                         ['mul', 'ret'])
 
     def test_inline2(self):
         harder = textwrap.dedent("""
@@ -67,3 +68,7 @@ class TestInlining(unittest.TestCase):
         # TODO: update phi when splitting blocks
         # result2 = interp.run(func)
         # assert result == result2
+
+
+if __name__ == '__main__':
+    unittest.main()

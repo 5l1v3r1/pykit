@@ -8,22 +8,22 @@ from pykit.ir import verify, interp
 source = """
 #include <pykit_ir.h>
 
-int myglobal = 10;
+Int32 myglobal = 10;
 
 float simple(float x) {
     return x * x;
 }
 
-int loop() {
-    int i, sum = 0;
+Int32 loop() {
+    Int32 i, sum = 0;
     for (i = 0; i < 10; i = i + 1) {
         sum = sum + i;
     }
     return sum;
 }
 
-int raise() {
-    Exception exc = new_exc("TypeError", list());
+Int32 raise() {
+    Exception exc = new_exc("TypeError", "");
     exc_throw(exc);
     return 0;
 }
@@ -53,3 +53,7 @@ class TestInterp(unittest.TestCase):
             assert isinstance(exc, TypeError), exc
         else:
             assert False, result
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -59,7 +59,7 @@ class TestCFA(unittest.TestCase):
         self.assertEqual(opcodes(blocks[0]), ['gt', 'cbranch'])
         self.assertEqual(opcodes(blocks[1]), ['jump'])
         self.assertEqual(opcodes(blocks[2]), ['jump'])
-        self.assertEqual(opcodes(blocks[3]), ['phi', 'ret'])
+        self.assertEqual(opcodes(blocks[3]), ['phi', 'convert', 'ret'])
 
         phi = findop(f, 'phi')
         iblocks, ivals = phi.args
@@ -75,4 +75,5 @@ class TestCFA(unittest.TestCase):
         self.assertEqual(codes.count('phi'), 3)
 
 if __name__ == '__main__':
+    #TestCFA('test_cfg').debug()
     unittest.main()

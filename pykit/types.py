@@ -10,7 +10,10 @@ class Type(object):
         self.managed = kwds.get('managed', False) # Managed by GC
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and super(Type, self).__eq__(other)
+        return (isinstance(other, type(self)) and
+                super(Type, self).__eq__(other) or
+                (self.is_typedef and self.type == other) or
+                (other.is_typedef and other.type == self))
 
     def __ne__(self, other):
         return not isinstance(other, type(self)) or super(Type, self).__ne__(other)
@@ -149,6 +152,8 @@ conversion_map.update(dict.fromkeys(float_set, float))
 
 def convert(value, dst_type):
     """(python value, type) -> converted python value"""
+    if dst_type.is_typedef:
+        dst_type = dst_type.type
     converter = conversion_map[dst_type]
     return converter(value)
 

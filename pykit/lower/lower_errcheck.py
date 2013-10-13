@@ -19,7 +19,7 @@ class LowerExceptionChecksCostful(FunctionPass):
         result, badval = op.args
         self.builder.position_after(op)
 
-        with self.builder.if_(self.builder.eq(types.Bool, [result, badval])):
+        with self.builder.if_(self.builder.eq(result, badval)):
             self.builder.gen_error_propagation()
 
         op.delete()

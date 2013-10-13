@@ -362,7 +362,8 @@ class Operation(Local):
     # __slots__ = ("parent", "opcode", "type", "args", "result", "metadata",
     #              "_prev", "_next")
 
-    def __init__(self, opcode, type, args, result=None, parent=None):
+    def __init__(self, opcode, type, args, result=None, parent=None,
+                 metadata=None):
         self.parent   = parent
         self.opcode   = opcode
         self.type     = type
@@ -371,6 +372,8 @@ class Operation(Local):
         self.metadata = {}
         self._prev    = None
         self._next    = None
+        if metadata:
+            self.add_metadata(metadata)
 
     @property
     def uses(self):

@@ -185,6 +185,8 @@ class Translator(object):
     # __________________________________________________________________
 
     def op_convert(self, op, arg):
+        if op.args[0].type == op.type:
+            return arg
         from llpython.byte_translator import LLVMCaster
         unsigned = op.type.is_int and op.type.unsigned
         # The float cast doens't accept this keyword argument
