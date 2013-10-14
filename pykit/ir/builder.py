@@ -246,7 +246,8 @@ class Builder(OpBuilder):
         # Split
 
         oldblock = self._curblock
-        newblock = self.func.new_block(name or 'block', after=self._curblock)
+        newblock = self.func.new_block(name or self.func.temp('block'),
+                                       after=self._curblock)
         op = self._lastop
 
         # Terminate if requested and not done already
