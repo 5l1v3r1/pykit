@@ -4,15 +4,12 @@
 Dead code elimination.
 """
 
-from pykit.analysis import loop_detection
-
 effect_free = set([
-    'alloca', 'load', 'new_list', 'new_tuple', 'new_dict', 'new_set',
-    'new_struct', 'new_data', 'new_exc', 'phi', 'exc_setup', 'exc_catch',
+    'alloca', 'load', 'new_exc', 'phi',
     'ptrload', 'ptrcast', 'ptr_isnull', 'getfield', 'getindex',
     'add', 'sub', 'mul', 'div', 'mod', 'lshift', 'rshift', 'bitand', 'bitor',
     'bitxor', 'invert', 'not_', 'uadd', 'usub', 'eq', 'ne', 'lt', 'le',
-    'gt', 'ge', 'is_', 'addressof',
+    'gt', 'ge', 'addressof',
 ])
 
 def dce(func, env=None):
