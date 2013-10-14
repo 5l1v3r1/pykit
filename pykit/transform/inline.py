@@ -21,7 +21,7 @@ def inline(func, call):
     """
     Inline the call instruction into func.
 
-    :param uses: defuse information
+    :return: { old_op : new_op }
     """
     callee = call.args[0]
     # assert_inlinable(func, call, callee, uses)
@@ -29,7 +29,7 @@ def inline(func, call):
     builder = Builder(func)
     builder.position_before(call)
     inline_header, inline_exit = builder.splitblock()
-    new_callee = copy_function(callee, temper=func.temp)
+    new_callee, valuemap = copy_function(callee, temper=func.temp)
     result = rewrite_return(new_callee)
 
     # Fix up arguments
@@ -59,6 +59,8 @@ def inline(func, call):
 
     func.reset_uses()
     verify(func)
+
+    return valuemap
 
 def assert_inlinable(func, call, callee, uses):
     """
