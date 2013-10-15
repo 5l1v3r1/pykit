@@ -10,7 +10,7 @@ from __future__ import print_function, division, absolute_import
 # Helpers
 #===------------------------------------------------------------------===
 
-def splitblock(block, trailing, name=None, terminate=False):
+def splitblock(block, trailing, name=None, terminate=False, preserve_exc=True):
     """Split the current block, returning (old_block, new_block)"""
     from pykit.analysis import cfa
     from pykit.ir import Builder
@@ -47,10 +47,28 @@ def splitblock(block, trailing, name=None, terminate=False):
         b.position_at_end(block)
         b.jump(newblock)
 
-    # Update phis
+    # Update phis and preserve exception blocks
     patch_phis(block, newblock, successors)
+    if preserve_exc:
+        preserve_exceptions(block, newblock)
 
     return block, newblock
+
+
+def preserve_exceptions(oldblock, newblock):
+    """
+    Preserve exc_setup instructions for block splits.
+    """
+    from pykit.ir import Builder
+
+    func = oldblock.parent
+    b = Builder(func)
+    b.position_at_beginning(newblock)
+
+    for op in oldblock.leaders:
+        if op.opcode == 'exc_setup':
+            b.exc_setup(op.args[0], **op.metadata)
+
 
 def patch_phis(oldblock, newblock, successors):
     """

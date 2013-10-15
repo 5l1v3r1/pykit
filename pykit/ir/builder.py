@@ -234,7 +234,7 @@ class Builder(OpBuilder):
         else:
             self.ret(Undef(type))
 
-    def splitblock(self, name=None, terminate=False):
+    def splitblock(self, name=None, terminate=False, preserve_exc=True):
         """Split the current block, returning (old_block, new_block)"""
         oldblock = self._curblock
         op = self._lastop
@@ -245,7 +245,8 @@ class Builder(OpBuilder):
         else:
             trailing = []
 
-        return blocks.splitblock(oldblock, trailing, name, terminate)
+        return blocks.splitblock(oldblock, trailing, name,
+                                 terminate, preserve_exc)
 
     def _patch_phis(self, oldblock, newblock):
         """

@@ -6,9 +6,6 @@ alltypes = set()
 class Type(object):
     """Base of types"""
 
-    def __init__(self, *values, **kwds):
-        self.managed = kwds.get('managed', False) # Managed by GC
-
     def __eq__(self, other):
         return (isinstance(other, type(self)) and
                 super(Type, self).__eq__(other) or
@@ -27,7 +24,15 @@ class Type(object):
 
 
 def typetuple(name, elems):
-    ty = type(name, (Type, namedtuple(name, elems)), {})
+    def __str__(self):
+        from .ir import pretty
+        return pretty.ftype(self)
+
+    def __repr__(self):
+        return "%s(%s)" % (name, ", ".join(str(getattr(self, attr)) for attr in elems))
+
+    ty = type(name, (Type, namedtuple(name, elems)), {'__str__': __str__,
+                                                      '__repr__': __repr__})
     alltypes.add(ty)
     return ty
 

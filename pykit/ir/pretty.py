@@ -47,8 +47,8 @@ def _farg(oparg):
         return str(oparg)
 
 def fop(op):
-    return '%{0} = ({1}) {2}({3})'.format(op.result, ftype(op.type), op.opcode,
-                                          ajoin(map(prefix, map(_farg, op.operands))))
+    body = "%s(%s)" % (op.opcode, ajoin(map(prefix, map(_farg, op.operands))))
+    return '%-5s = %s -> %s' % (op.result, body, ftype(op.type))
 
 def fconst(c):
     return 'const(%s, %s)' % (ftype(c.type), c.const)
@@ -67,7 +67,9 @@ def ftype(val):
         args = ", ".join('%s:%s' % (name, ty)
                          for name, ty in zip(val.names, val.types))
         return '{ %s }' % args
-    return str(val)
+    if val.is_pointer:
+        return "%s*" % (val.base,)
+    return repr(val)
 
 
 formatters = {
