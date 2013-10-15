@@ -93,7 +93,7 @@ class TestBuilder(unittest.TestCase):
             ret %1
         """
         square = self.b.mul(self.a, self.a)
-        old, new = self.b.splitblock('newblock')
+        old, new = self.b.splitblock('newblock', terminate=True)
         with self.b.at_front(new):
             phi = self.b.phi(types.Int32, [self.f.startblock], [square])
             self.b.ret(phi)

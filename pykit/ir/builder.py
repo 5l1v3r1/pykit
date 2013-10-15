@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 from pykit import error
 from pykit import types
-from pykit.ir import Value, Const, Undef, ops, findop, FuncArg
+from pykit.ir import Value, Const, Undef, ops, findop, FuncArg, blocks
 from . import _generated
 
 #===------------------------------------------------------------------===
@@ -236,59 +236,20 @@ class Builder(OpBuilder):
 
     def splitblock(self, name=None, terminate=False):
         """Split the current block, returning (old_block, new_block)"""
-        # -------------------------------------------------
-        # Sanity check
-
-        # Allow splitting only after leaders and before terminator
-        # TODO: error check
-
-        # -------------------------------------------------
-        # Split
-
         oldblock = self._curblock
-        newblock = self.func.new_block(name or self.func.temp('block'),
-                                       after=self._curblock)
         op = self._lastop
-
-        # Terminate if requested and not done already
-        if terminate and not ops.is_terminator(op):
-            op = self.jump(newblock)
-
-        # -------------------------------------------------
-        # Move ops after the split to new block
-
-        if op:
-            if op == 'head':
-                trailing = list(self._curblock.ops)
-            elif op == 'tail':
-                trailing = []
-            else:
-                trailing = list(op.block.ops.iter_from(op))[1:]
-
-            for op in trailing:
-                op.unlink()
-            newblock.extend(trailing)
-
-        # -------------------------------------------------
-        # Patch phis
-
-        if terminate:
-            self._patch_phis(oldblock.ops, oldblock, newblock)
+        if op == 'head':
+            trailing = list(self._curblock.ops)
+        elif op != 'tail':
+            trailing = list(op.block.ops.iter_from(op))[1:]
         else:
-            for op in oldblock:
-                for use in self.func.uses[op]:
-                    if use.opcode == 'phi':
-                        raise error.CompileError(
-                            "Splitting this block would corrupt some phis")
+            trailing = []
 
-        self._patch_phis(newblock.ops, oldblock, newblock)
+        return blocks.splitblock(oldblock, trailing, name, terminate)
 
-        return oldblock, newblock
-
-    def _patch_phis(self, ops, oldblock, newblock):
+    def _patch_phis(self, oldblock, newblock):
         """
-        Patch uses of the instructions in `ops` when a predecessor changes
-        from `oldblock` to `newblock`
+        Patch phis when a predecessor block changes
         """
         for op in ops:
             for use in self.func.uses[op]:

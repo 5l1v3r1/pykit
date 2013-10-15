@@ -1,5 +1,6 @@
 from functools import partial
 
+from pykit import error
 from pykit.ir import vvisit, ArgLoader, verify_lowlevel
 from pykit.ir import defs, opgrouper
 from pykit.types import Boolean, Integral, Real, Pointer, Function, Int64, Struct
@@ -299,6 +300,15 @@ class Translator(object):
         return self.builder.icmp(lc.ICMP_EQ, intval, zero(intval.type), op.result)
 
     # __________________________________________________________________
+
+    def op_exc_setup(self, op, *args):
+        raise error.CompileError("exc_setup should have been replaced")
+
+    def op_exc_throw(self, op, *args):
+        raise error.CompileError("exc_throw should have been replaced")
+
+    def op_exc_catch(self, op, *args):
+        raise error.CompileError("exc_catch should have been replaced")
 
 
 def allocate_blocks(llvm_func, pykit_func):

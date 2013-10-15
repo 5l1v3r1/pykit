@@ -37,18 +37,8 @@ def cfg(func):
     for block in func.blocks:
         # -------------------------------------------------
         # Deduce CFG edges from block terminator
-        op = block.terminator
-        if op.opcode == 'jump':
-            targets = [op.args[0]]
-        elif op.opcode == 'cbranch':
-            cond, ifbb, elbb = op.args
-            targets = [ifbb, elbb]
-        elif op.opcode == 'ret':
-            targets = []
-        else:
-            assert op.opcode == ops.exc_throw # exc_throw
-            # Below we add all exception handlers as targets. There's nothing
-            # to do here (except add the exit block?)
+
+        targets = deduce_successors(block)
 
         # -------------------------------------------------
         # Deduce CFG edges from exc_setup
@@ -66,6 +56,20 @@ def cfg(func):
             cfg.add_edge(block, target)
 
     return cfg
+
+def deduce_successors(block):
+    """Deduce the successors of a basic block"""
+    op = block.terminator
+    if op.opcode == 'jump':
+        successors = [op.args[0]]
+    elif op.opcode == 'cbranch':
+        cond, ifbb, elbb = op.args
+        successors = [ifbb, elbb]
+    else:
+        assert op.opcode in (ops.ret, ops.exc_throw)
+        successors = []
+
+    return successors
 
 def find_allocas(func):
     """
