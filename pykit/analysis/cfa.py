@@ -8,8 +8,7 @@ phi Operations in the IR.
 from __future__ import print_function, division, absolute_import
 import collections
 
-from pykit.ir import ops, Builder, Undef
-from pykit.analysis import defuse
+from pykit.ir import ops, Builder, Undef, blocks
 from pykit.utils import mergedicts
 
 import networkx as nx
@@ -216,6 +215,12 @@ def simplify(func, cfg):
     for block in reversed(list(func.blocks)):
         if len(cfg.predecessors(block)) == 1 and not list(block.leaders):
             [pred] = cfg.predecessors(block)
+            successors = cfg.neighbors(block)
             exc_block = any(op.opcode in ('exc_setup',) for op in pred.leaders)
             if not exc_block and len(cfg[pred]) == 1:
+                blocks.patch_phis(block, pred, successors)
                 merge_blocks(func, pred, block)
+                cfg.remove_edge(pred, block)
+                for succ in successors:
+                    cfg.remove_edge(block, succ)
+                    cfg.add_edge(pred, succ)

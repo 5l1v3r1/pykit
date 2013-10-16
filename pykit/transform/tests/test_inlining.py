@@ -66,8 +66,8 @@ class TestInlining(unittest.TestCase):
         verify(func)
 
         # TODO: update phi when splitting blocks
-        # result2 = interp.run(func)
-        # assert result == result2
+        result2 = interp.run(func)
+        assert result == result2
 
 
 if __name__ == '__main__':
