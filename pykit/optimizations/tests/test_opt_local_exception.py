@@ -22,9 +22,9 @@ class TestLocalExceptionRewriting(unittest.TestCase):
             b.exc_catch([Const(Exception, types.Exception)])
 
         local_exceptions.run(func, {})
-        print(func)
+        self.assertNotIn('exc_throw', opcodes(func))
 
 
 if __name__ == '__main__':
-    TestLocalExceptionRewriting('test_exc_rewrite').debug()
-    #unittest.main()
+    #TestLocalExceptionRewriting('test_exc_rewrite').debug()
+    unittest.main()

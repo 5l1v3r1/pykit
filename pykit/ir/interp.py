@@ -434,6 +434,15 @@ class ExceptionModel(object):
     Model that governs the exception hierarchy
     """
 
+    def exc_op_match(self, exc_type, op):
+        """
+        See whether `exception` matches `exc_type`
+        """
+        assert exc_type.opcode == 'constant'
+        if op.opcode == 'constant':
+            return self.exc_match(exc_type.const, op.const)
+        raise NotImplementedError("Dynamic exception checks")
+
     def exc_match(self, exc_type, exception):
         """
         See whether `exception` matches `exc_type`
