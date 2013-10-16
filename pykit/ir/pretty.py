@@ -48,7 +48,7 @@ def _farg(oparg):
 
 def fop(op):
     body = "%s(%s)" % (op.opcode, ajoin(map(prefix, map(_farg, op.operands))))
-    return '%-5s = %s -> %s' % (op.result, body, ftype(op.type))
+    return '%%%-5s = %s -> %s' % (op.result, body, ftype(op.type))
 
 def fconst(c):
     return 'const(%s, %s)' % (ftype(c.type), c.const)

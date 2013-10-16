@@ -37,8 +37,9 @@ def inline(func, call):
         funcarg.replace_uses(arg)
 
     # Copy blocks
+    new_blocks = list(new_callee.blocks)
     after = inline_header
-    for block in new_callee.blocks:
+    for block in new_blocks:
         block.parent = None
         func.add_block(block, after=after)
         after = block
@@ -47,6 +48,13 @@ def inline(func, call):
     builder.jump(new_callee.startblock)
     with builder.at_end(new_callee.exitblock):
         builder.jump(inline_exit)
+
+    # Replicate exc_setup
+    setups = [op for op in call.block.leaders if op.opcode == 'exc_setup']
+    for block in new_blocks:
+        builder.position_at_beginning(block)
+        for setup in setups:
+            builder.exc_setup(setup.args[0])
 
     # Fix up final result of call
     if result is not None:
