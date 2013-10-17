@@ -51,7 +51,7 @@ def fop(op):
     return '%%%-5s = %s -> %s' % (op.result, body, ftype(op.type))
 
 def fconst(c):
-    return 'const(%s, %s)' % (ftype(c.type), c.const)
+    return 'const(%s, %s)' % (c.const, ftype(c.type))
 
 def fglobal(val):
     return "global %{0} = {1}".format(val.name, ftype(val.type))

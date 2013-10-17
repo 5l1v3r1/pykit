@@ -590,6 +590,10 @@ class Constant(Value):
         const, = self.args
         return const
 
+    def __eq__(self, other):
+        return (isinstance(other, Constant) and self.type == other.type and
+                self.const == other.const)
+
     def __repr__(self):
         return "constant(%s)" % (self.const,)
 
@@ -599,6 +603,9 @@ class Pointer(object):
 
     def __init__(self, base):
         self.base = base
+
+    def __eq__(self, other):
+        return isinstance(other, Pointer) and self.base == other.base
 
     def __repr__(self):
         return "%s *" % (self.base,)
@@ -610,6 +617,9 @@ class Struct(object):
     def __init__(self, names, values):
         self.names = names
         self.values = values
+
+    def __eq__(self, other):
+        return isinstance(other, Struct) and self.names == other.names
 
     def __repr__(self):
         items = ", ".join("%s : %s" % (name, value)
