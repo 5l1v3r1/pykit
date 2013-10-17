@@ -598,20 +598,22 @@ class Constant(Value):
         return "constant(%s)" % (self.const,)
 
 
-class Pointer(object):
+class Pointer(Value):
     """Pointer to constant value"""
 
-    def __init__(self, base):
+    def __init__(self, base, type):
         self.base = base
+        self.type = type
 
     def __eq__(self, other):
-        return isinstance(other, Pointer) and self.base == other.base
+        return (isinstance(other, Pointer) and self.base == other.base and
+                self.type == other.type)
 
     def __repr__(self):
         return "%s *" % (self.base,)
 
 
-class Struct(object):
+class Struct(Value):
     """Represents a constant Struct value"""
 
     def __init__(self, names, values):

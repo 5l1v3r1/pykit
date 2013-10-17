@@ -366,6 +366,9 @@ class LLVMArgLoader(ArgLoader):
     def load_Constant(self, arg):
         return make_constant(arg.const, arg.type)
 
+    def load_Pointer(self, arg):
+        return const_i64(arg.base).inttoptr(llvm_type(arg.type))
+
     def load_Undef(self, arg):
         return lc.Constant.undef(llvm_type(arg.type))
 
@@ -377,7 +380,7 @@ def make_constant(value, ty):
         if value == 0:
             return lc.Constant.null(lty)
         elif isinstance(value, (int, long)):
-            return const_i64(value).inttoptr(i64)
+            return const_i64(value).inttoptr(lty)
         else:
             raise ValueError(
                 "Cannot create constant pointer to value '%s'" % (value,))
