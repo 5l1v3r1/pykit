@@ -41,7 +41,8 @@ def fblock(block):
 
 def _farg(oparg):
     from pykit import ir
-    if isinstance(oparg, ir.Function):
+
+    if isinstance(oparg, (ir.Function, ir.Block)):
         return prefix(oparg.name)
     elif isinstance(oparg, list):
         return "[%s]" % ", ".join(_farg(arg) for arg in oparg)
