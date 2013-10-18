@@ -74,6 +74,12 @@ def ftype(val):
         return "%s*" % (val.base,)
     return repr(val)
 
+def fptr(val):
+    return repr(val)
+
+def fstruct(val):
+    return repr(val)
+
 
 formatters = {
     'Module':      fmod,
@@ -84,4 +90,6 @@ formatters = {
     'Operation':   fop,
     'Constant':    fconst,
     'Undef':       fundef,
+    'Pointer':     fptr,
+    'Struct':      fstruct,
 }
