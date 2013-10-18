@@ -595,7 +595,7 @@ class Constant(Value):
                 self.const == other.const)
 
     def __repr__(self):
-        return "constant(%s)" % (self.const,)
+        return "constant(%s, %s)" % (self.const, self.type)
 
 
 class Pointer(Value):

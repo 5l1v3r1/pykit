@@ -61,6 +61,9 @@ def fundef(val):
 
 def ftype(val):
     from pykit import types
+    if not isinstance(val, types.Type):
+        return str(val)
+
     if hashable(val) and val in types.type2name:
         return types.type2name[val]
     if val.is_struct:
