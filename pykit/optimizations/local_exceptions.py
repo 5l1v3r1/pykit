@@ -18,6 +18,13 @@ def find_handler(setup_handlers, exc_model, exc):
 
 
 def rewrite_exceptions(func, env, exc_model=interp.ExceptionModel()):
+    """
+    Rewrite exc_throw(exc) -> jump(handler_block) for statically determined
+    exceptions.
+
+    TODO: Can this be optimized instead after lowering to a zero-cost or
+          costful model?
+    """
     b = OpBuilder()
     for op in func.ops:
         if op.opcode != 'exc_throw':

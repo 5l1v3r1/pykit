@@ -42,12 +42,16 @@ def fblock(block):
 def _farg(oparg):
     from pykit import ir
     if isinstance(oparg, ir.Function):
-        return oparg.name
+        return prefix(oparg.name)
+    elif isinstance(oparg, list):
+        return "[%s]" % ", ".join(_farg(arg) for arg in oparg)
+    elif isinstance(oparg, ir.Op):
+        return prefix(str(oparg.result))
     else:
         return str(oparg)
 
 def fop(op):
-    body = "%s(%s)" % (op.opcode, ajoin(map(prefix, map(_farg, op.operands))))
+    body = "%s(%s)" % (op.opcode, ajoin(map(_farg, op.args)))
     return '%%%-5s = %s -> %s' % (op.result, body, ftype(op.type))
 
 def fconst(c):
