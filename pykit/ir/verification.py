@@ -79,7 +79,6 @@ def verify_function(func):
     restype = func.type.restype
     if not restype.is_void and not restype.is_opaque:
         rets = findallops(func, 'ret')
-        assert rets
         for ret in rets:
             arg, = ret.args
             assert arg.type == restype, (arg.type, restype)
