@@ -27,7 +27,8 @@ class TestCTypes(unittest.TestCase):
         i = ctypes.c_int32(10)
         p = ctypes.pointer(i)
         addr = ctypes.cast(p, ctypes.c_void_p).value
-        self.assertEqual(from_ctypes_value(p), ir.Pointer(addr))
+        self.assertEqual(from_ctypes_value(p),
+                         ir.Pointer(addr, types.Pointer(types.Int32)))
         #self.assertEqual(from_ctypes_type(MyStruct),
         #                 types.Struct(('x', 'y'), (types.Float32, types.Int64)))
 
