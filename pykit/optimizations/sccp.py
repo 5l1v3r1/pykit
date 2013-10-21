@@ -33,7 +33,6 @@ from collections import defaultdict, deque
 
 from pykit import types
 from pykit.analysis import cfa
-from pykit.transform import dce
 from pykit.ir import Op, Const, vmap
 
 #===------------------------------------------------------------------===
@@ -225,6 +224,12 @@ class ConstantFolder(object):
 #===------------------------------------------------------------------===
 
 def apply_result(func, cfg, deadblocks, cells):
+    """
+    Apply the result of the SCCP analysis:
+
+        - replace ops with constants
+        - remove unreachable code blocks
+    """
     for op in func.ops:
         if isconst(cells[op]):
             op.replace_uses(cells[op])
@@ -237,24 +242,7 @@ def apply_result(func, cfg, deadblocks, cells):
             cfg.remove_edge(op.block, other)
             op.replace(Op("jump", types.Void, [target], op.result))
 
-    for block in deadblocks:
-        func.del_block(block)
-        for succ in cfg.successors(block):
-            # Remove CFG edge from dead block to successor
-            cfg.remove_edge(block, succ)
-
-            # Delete associated phis from successor blocks
-            for leader in succ.leaders:
-                if leader.opcode == 'phi':
-                    blocks, values = map(list, leader.args)
-                    while block in blocks:
-                        idx = blocks.index(block)
-                        blocks.remove(block)
-                        values.pop(idx)
-                    leader.set_args([blocks, values])
-
-    dce.dce(func)
-    cfa.simplify(func, cfg)
+    cfa.delete_blocks(func, cfg, deadblocks)
 
 #===------------------------------------------------------------------===
 # run

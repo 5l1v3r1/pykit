@@ -9,9 +9,14 @@ from __future__ import print_function, division, absolute_import
 import collections
 
 from pykit.ir import ops, Builder, Undef, blocks
+from pykit.transform import dce
 from pykit.utils import mergedicts
 
 import networkx as nx
+
+#===------------------------------------------------------------------===
+# Data Flow
+#===------------------------------------------------------------------===
 
 def run(func, env=None):
     CFG = cfg(func)
@@ -197,7 +202,9 @@ def compute_dominators(func, cfg):
 
     return dominators
 
-# ______________________________________________________________________
+#===------------------------------------------------------------------===
+# Control Flow Simplification
+#===------------------------------------------------------------------===
 
 unmergable = ('exc_setup', 'exc_catch')
 
@@ -227,3 +234,32 @@ def simplify(func, cfg):
                 for succ in successors:
                     cfg.remove_edge(block, succ)
                     cfg.add_edge(pred, succ)
+
+#===------------------------------------------------------------------===
+# Block Removal
+#===------------------------------------------------------------------===
+
+def delete_blocks(func, cfg, deadblocks):
+    """
+    Apply the result of the SCCP analysis:
+
+        - remove unreachable code blocks
+    """
+    for block in deadblocks:
+        func.del_block(block)
+        for succ in cfg.successors(block):
+            # Remove CFG edge from dead block to successor
+            cfg.remove_edge(block, succ)
+
+            # Delete associated phis from successor blocks
+            for leader in succ.leaders:
+                if leader.opcode == 'phi':
+                    blocks, values = map(list, leader.args)
+                    while block in blocks:
+                        idx = blocks.index(block)
+                        blocks.remove(block)
+                        values.pop(idx)
+                    leader.set_args([blocks, values])
+
+    dce.dce(func)
+    simplify(func, cfg)
