@@ -33,6 +33,7 @@ from collections import defaultdict, deque
 
 from pykit import types
 from pykit.analysis import cfa
+from pykit.transform import dce
 from pykit.ir import Op, Const, vmap
 
 #===------------------------------------------------------------------===
@@ -239,8 +240,20 @@ def apply_result(func, cfg, deadblocks, cells):
     for block in deadblocks:
         func.del_block(block)
         for succ in cfg.successors(block):
+            # Remove CFG edge from dead block to successor
             cfg.remove_edge(block, succ)
 
+            # Delete associated phis from successor blocks
+            for leader in succ.leaders:
+                if leader.opcode == 'phi':
+                    blocks, values = map(list, leader.args)
+                    while block in blocks:
+                        idx = blocks.index(block)
+                        blocks.remove(block)
+                        values.pop(idx)
+                    leader.set_args([blocks, values])
+
+    dce.dce(func)
     cfa.simplify(func, cfg)
 
 #===------------------------------------------------------------------===

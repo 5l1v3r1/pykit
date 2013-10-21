@@ -199,6 +199,8 @@ def compute_dominators(func, cfg):
 
 # ______________________________________________________________________
 
+unmergable = ('exc_setup', 'exc_catch')
+
 def merge_blocks(func, pred, succ):
     """Merge two consecutive blocks (T2 transformation)"""
     assert pred.terminator.opcode == 'jump', pred.terminator.opcode
@@ -213,7 +215,8 @@ def simplify(func, cfg):
     child, the child one parent, and both have compatible instruction leaders.
     """
     for block in reversed(list(func.blocks)):
-        if len(cfg.predecessors(block)) == 1 and not list(block.leaders):
+        if (len(cfg.predecessors(block)) == 1 and not
+                any(l.opcode in unmergable for l in block.leaders)):
             [pred] = cfg.predecessors(block)
             successors = cfg.neighbors(block)
             exc_block = any(op.opcode in ('exc_setup',) for op in pred.leaders)
