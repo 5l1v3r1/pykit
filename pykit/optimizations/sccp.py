@@ -55,7 +55,7 @@ cell = lambda: top
 isconst = lambda x: x not in (top, bottom)
 unwrap = lambda x: x.const if isinstance(x, Const) else x
 
-def sccp(func, env=None, constantfolder=None):
+def sccp(func, constantfolder=None):
     """
     Perform Sparse conditional constant propagation. The idea is to have two
     queues, one for blocks and one for SSA variables (Ops).
@@ -248,6 +248,6 @@ def apply_result(func, cfg, deadblocks, cells):
 # run
 #===------------------------------------------------------------------===
 
-def run(func, env=None):
-    deadblocks, cells, cfg = sccp(func)
+def run(func, env=None, constantfolder=None):
+    deadblocks, cells, cfg = sccp(func, constantfolder)
     apply_result(func, cfg, deadblocks, cells)
