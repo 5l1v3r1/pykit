@@ -16,8 +16,10 @@ from pykit.utils import hashable
 # CTypes Types for Type Checking
 #===------------------------------------------------------------------===
 
+libc = ctypes.CDLL(ctypes.util.find_library('c'))
+
 _ctypes_scalar_type = type(ctypes.c_int)
-_ctypes_func_type = type(ctypes.CFUNCTYPE(ctypes.c_int))
+_ctypes_func_type = (type(ctypes.CFUNCTYPE(ctypes.c_int)), type(libc.printf))
 _ctypes_pointer_type = type(ctypes.POINTER(ctypes.c_int))
 _ctypes_array_type = type(ctypes.c_int * 2)
 
@@ -27,8 +29,11 @@ CData = type(ctypes.c_int(10)).__mro__[-2]
 # Check Whether values are ctypes values
 #===------------------------------------------------------------------===
 
+def is_ctypes_function_type(value):
+    return isinstance(value, _ctypes_func_type)
+
 def is_ctypes_function(value):
-    return isinstance(type(value), _ctypes_func_type)
+    return is_ctypes_function_type(type(value))
 
 def is_ctypes_value(ctypes_value):
     return isinstance(ctypes_value, CData)
@@ -50,12 +55,15 @@ def is_ctypes(value):
     "Check whether the given value is a ctypes value"
     return is_ctypes_value(value) or is_ctypes_type(value)
 
+ptrval = lambda val: ctypes.cast(val, ctypes.c_void_p).value
+
 #===------------------------------------------------------------------===
 # Type mapping (ctypes -> numba)
 #===------------------------------------------------------------------===
 
 ctypes_map = {
     ctypes.c_bool :  types.Bool,
+    ctypes.c_char :  types.Int8,
     ctypes.c_int8 :  types.Int8,
     ctypes.c_int16:  types.Int16,
     ctypes.c_int32:  types.Int32,
@@ -86,6 +94,11 @@ def from_ctypes_type(ctypes_type):
                       for name, field_type in ctypes_type._fields_]
         fieldnames, fieldtypes = zip(*fields) or (('dummy',), (types.Int8,))
         return types.Struct(fieldnames, fieldtypes)
+    # It is not possible to determine the argtypes from a type...
+    #elif is_ctypes_function_type(ctypes_type):
+    #    c_restype = from_ctypes_type(ctypes_type.restype)
+    #    c_argtypes = [from_ctypes_type(argty) for argty in ctypes_type.argtypes]
+    #    return types.Function(c_restype, c_argtypes)
     else:
         raise NotImplementedError(ctypes_type)
 
@@ -96,6 +109,11 @@ def from_ctypes_value(ctypes_value):
     if not is_ctypes_value(ctypes_value):
         assert isinstance(ctypes_value, (int, long, float))
         return Const(ctypes_value)
+
+    if is_ctypes_function(ctypes_value):
+        restype = from_ctypes_type(ctypes_value.restype)
+        argtypes = [from_ctypes_type(argty) for argty in ctypes_value.argtypes]
+        return Pointer(ptrval(ctypes_value), types.Function(restype, argtypes))
 
     ctype = type(ctypes_value)
 
