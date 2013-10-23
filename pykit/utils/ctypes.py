@@ -94,11 +94,10 @@ def from_ctypes_type(ctypes_type):
                       for name, field_type in ctypes_type._fields_]
         fieldnames, fieldtypes = zip(*fields) or (('dummy',), (types.Int8,))
         return types.Struct(fieldnames, fieldtypes)
-    # It is not possible to determine the argtypes from a type...
-    #elif is_ctypes_function_type(ctypes_type):
-    #    c_restype = from_ctypes_type(ctypes_type.restype)
-    #    c_argtypes = [from_ctypes_type(argty) for argty in ctypes_type.argtypes]
-    #    return types.Function(c_restype, c_argtypes)
+    elif is_ctypes_function_type(ctypes_type):
+        c_restype = from_ctypes_type(ctypes_type._restype_)
+        c_argtypes = [from_ctypes_type(argty) for argty in ctypes_type._argtypes_]
+        return types.Function(c_restype, c_argtypes)
     else:
         raise NotImplementedError(ctypes_type)
 

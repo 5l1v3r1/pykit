@@ -1,6 +1,7 @@
 from functools import partial
 
 from pykit import error
+from pykit import ir
 from pykit.ir import vvisit, ArgLoader, verify_lowlevel
 from pykit.ir import defs, opgrouper
 from pykit.types import Boolean, Integral, Real, Pointer, Function, Int64, Struct
@@ -200,8 +201,12 @@ class Translator(object):
     def op_call(self, op, function, args):
         # Get the callee LLVM function from the cache. This is put there by
         # pykit.codegen.codegen
-        cache = self.env["codegen.cache"]
-        lfunc = cache[function]
+        if isinstance(function, ir.Function):
+            cache = self.env["codegen.cache"]
+            lfunc = cache[function]
+        else:
+            lfunc = function # function pointer
+
         return self.builder.call(lfunc, args)
 
     def op_call_math(self, op, name, args):
