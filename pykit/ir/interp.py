@@ -233,7 +233,7 @@ class Interp(object):
     def ptrload(self, ptr):
         return ptr[0]
 
-    def ptrstore(self, ptr, value):
+    def ptrstore(self, value, ptr):
         ptr[0] = value
 
     def ptr_isnull(self, ptr):

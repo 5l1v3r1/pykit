@@ -70,10 +70,10 @@ class OpBuilder(_generated.GeneratedBuilder):
         assert ptr.type.is_pointer
         return super(OpBuilder, self).ptrload(ptr.type.base, ptr, **kwds)
 
-    def ptrstore(self, ptr, value, **kwds):
+    def ptrstore(self, value, ptr, **kwds):
         assert ptr.type.is_pointer
         assert ptr.type.base == value.type
-        return super(OpBuilder, self).ptrstore(ptr, **kwds)
+        return super(OpBuilder, self).ptrstore(value, ptr, **kwds)
 
     def ptr_isnull(self, ptr, **kwds):
         assert ptr.type.is_pointer

@@ -118,7 +118,7 @@ sizeof             = op('sizeof/v')           # expr obj
 
 ptradd             = op('ptradd/vv')          # expr pointer, expr value
 ptrload            = op('ptrload/v')          # expr pointer
-ptrstore           = op('ptrstore/vv')        # expr pointer, expr value
+ptrstore           = op('ptrstore/vv')        # expr value, expr pointer
 ptrcast            = op('ptrcast/v')          # expr pointer
 ptr_isnull         = op('ptr_isnull/v')       # expr pointer
 

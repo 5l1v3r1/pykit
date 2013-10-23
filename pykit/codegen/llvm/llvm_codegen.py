@@ -289,8 +289,8 @@ class Translator(object):
     def op_ptrload(self, op, ptr):
         return self.builder.load(ptr, op.result)
 
-    def op_ptrstore(self, op, ptr, val):
-        return self.builder.store(val, ptr, op.result)
+    def op_ptrstore(self, op, val, ptr):
+        return self.builder.store(val, ptr)
 
     def op_ptrcast(self, op, val):
         return self.builder.bitcast(val, self.llvm_type(op.type), op.result)
