@@ -610,7 +610,7 @@ class Pointer(Value):
                 self.type == other.type)
 
     def __repr__(self):
-        return "%s *" % (self.base,)
+        return "((%s) %s)" % (self.type, self.base)
 
 
 class Struct(Value):
