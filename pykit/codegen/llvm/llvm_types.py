@@ -18,6 +18,8 @@ def llvm_type(type):
         fields = [llvm_type(ftype) for ftype in type.types]
         return Type.struct(fields)
     elif ty == Pointer:
+        if type.base.is_void:
+            return Type.pointer(Type.int(8))
         return Type.pointer(llvm_type(type.base))
     elif ty == Function:
         return Type.function(llvm_type(type.restype),
