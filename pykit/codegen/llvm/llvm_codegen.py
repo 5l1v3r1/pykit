@@ -72,13 +72,36 @@ def float_usub(builder, val):
 def float_not(builder, val):
     return builder.fcmp(lc.FCMP_OEQ, val, Constant.real(val.type, 0))
 
+def vector_invert(builder, value):
+    return builder.not_(value)
+
+def vector_usub(builder, val):
+    return builder.sub(Constant.vector([Constant.int(val.type.base, 0)] * val.type.count))
+
+def vector_not(builder, value):
+    return builder.icmp(lc.ICMP_EQ, value, Constant.vector([Constant.int(value.type.base, 0)] * value.type.count))
+
 
 binop_int  = {
      '+': (lc.Builder.add, lc.Builder.add),
      '-': (lc.Builder.sub, lc.Builder.sub),
      '*': (lc.Builder.mul, lc.Builder.mul),
      '/': (lc.Builder.sdiv, lc.Builder.udiv),
-    '//': (lc.Builder.sdiv, lc.Builder.udiv),
+     '//': (lc.Builder.sdiv, lc.Builder.udiv),
+     '%': (lc.Builder.srem, lc.Builder.urem),
+     '&': (lc.Builder.and_, lc.Builder.and_),
+     '|': (lc.Builder.or_, lc.Builder.or_),
+     '^': (lc.Builder.xor, lc.Builder.xor),
+     '<<': (lc.Builder.shl, lc.Builder.shl),
+     '>>': (lc.Builder.ashr, lc.Builder.lshr),
+}
+
+binop_vector = {
+     '+': (lc.Builder.add, lc.Builder.add),
+     '-': (lc.Builder.sub, lc.Builder.sub),
+     '*': (lc.Builder.mul, lc.Builder.mul),
+     '/': (lc.Builder.sdiv, lc.Builder.udiv),
+     '//': (lc.Builder.sdiv, lc.Builder.udiv),
      '%': (lc.Builder.srem, lc.Builder.urem),
      '&': (lc.Builder.and_, lc.Builder.and_),
      '|': (lc.Builder.or_, lc.Builder.or_),
@@ -111,6 +134,13 @@ unary_float = {
     '!': float_not,
     "+": lambda builder, arg: arg,
     "-": float_usub,
+}
+
+unary_vector = {
+    '~': vector_invert,
+    '!': vector_not,
+    "+": lambda builder, arg: arg,
+    "-": vector_usub,
 }
 
 #===------------------------------------------------------------------===
@@ -172,6 +202,7 @@ class Translator(object):
     def op_unary(self, op, arg):
         opmap = { Boolean: unary_bool,
                   Integral: unary_int,
+                  Vector: unary_vector,
                   Real: unary_float }[type(op.type)]
         unop = defs.unary_opcodes[op.opcode]
         return opmap[unop](self.builder, arg)
@@ -180,6 +211,9 @@ class Translator(object):
         binop = defs.binary_opcodes[op.opcode]
         if op.type.is_int:
             genop = binop_int[binop][op.type.unsigned]
+        # TODO: is_vector
+        elif op.type.is_vector:
+            genop = binop_vector[binop][op.type.unsigned]
         else:
             genop = binop_float[binop]
         return genop(self.builder, left, right, op.result)

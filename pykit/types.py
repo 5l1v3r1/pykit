@@ -50,6 +50,7 @@ Function   = typetuple('Function', ['restype', 'argtypes', 'varargs'])
 ExceptionT = typetuple('Exception',[])
 BytesT     = typetuple('Bytes',    [])
 OpaqueT    = typetuple('Opaque',   []) # Some type we make zero assumptions about
+Vector     = typetuple('Vector',   ['base', 'count'])
 
 # These are user-defined types
 # Complex    = typetuple('Complex',  ['base'])
@@ -73,10 +74,12 @@ Int8    = Integral(8,  False)
 Int16   = Integral(16, False)
 Int32   = Integral(32, False)
 Int64   = Integral(64, False)
+Int128  = Integral(128, False)
 UInt8   = Integral(8,  True)
 UInt16  = Integral(16, True)
 UInt32  = Integral(32, True)
 UInt64  = Integral(64, True)
+UInt128 = Integral(128, False)
 
 Float32  = Real(32)
 Float64  = Real(64)
@@ -141,6 +144,7 @@ typing_defaults = {
     dict:       Dict,
     str:        Bytes,
     bytes:      Bytes,
+    vector:     Vector,
 }
 
 def typeof(value):
