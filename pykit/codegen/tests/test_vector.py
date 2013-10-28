@@ -16,8 +16,8 @@ class TestVector(unittest.TestCase):
         simple = textwrap.dedent("""
         #include <pykit_ir.h>
 
-        Vector<UInt32> f() {
-            Vector<UInt32> x, y;
+        Vector<UInt32, 4> f() {
+            Vector<UInt32, 4> x, y;
 
             x = 2; // TODO: fill vector?
             y = 3;
