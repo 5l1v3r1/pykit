@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+
+"""
+LLVM code generation.
+"""
+
+from __future__ import print_function, division, absolute_import
+
 from functools import partial
 
 from pykit import error
@@ -298,7 +306,11 @@ class Translator(object):
         return self.builder.store(val, ptr)
 
     def op_ptrcast(self, op, val):
-        return self.builder.bitcast(val, self.llvm_type(op.type), op.result)
+        ltype = self.llvm_type(op.type)
+        if op.type.is_int:
+            return self.builder.ptrtoint(val, ltype)
+        else:
+            return self.builder.bitcast(val, ltype, op.result)
 
     def op_ptr_isnull(self, op, val):
         intval = self.builder.ptrtoint(val, self.llvm_type(Int64))
