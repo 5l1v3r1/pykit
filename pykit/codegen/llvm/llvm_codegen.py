@@ -55,48 +55,58 @@ compare_bool = {
     '!=' : lc.ICMP_NE
 }
 
+
+def create_constant(typ, value):
+    """
+    Creates a constant scalar, or vector of constant scalars
+    """
+    t = typ.base if typ.is_vector else typ
+    if t.is_int:
+        const = Constant.int(type, value)
+    elif t.is_real:
+        const = Constant.real(type, value)
+    else:
+        raise "Incorrect type"
+    if type.is_vector:
+        const = Constant.vector([const] * typ.count)
+    return const
+
+
 # below based on from npm/codegen
 
 def integer_invert(builder, val):
-    return builder.xor(val, Constant.int_signextend(val.type, -1))
+    return builder.not_(val)
 
 def integer_usub(builder, val):
-    return builder.sub(Constant.int(val.type, 0), val)
+    return builder.sub(create_constant(val.type, 0), val)
 
 def integer_not(builder, value):
-    return builder.icmp(lc.ICMP_EQ, value, Constant.int(value.type, 0))
+    return builder.icmp(lc.ICMP_EQ, value, create_constant(value.type, 0))
 
 def float_usub(builder, val):
-    return builder.fsub(Constant.real(val.type, 0), val)
+    return builder.fsub(create_constant(val.type, 0), val)
 
 def float_not(builder, val):
-    return builder.fcmp(lc.FCMP_OEQ, val, Constant.real(val.type, 0))
+    return builder.fcmp(lc.FCMP_OEQ, val, create_constant(val.type, 0))
 
-def vector_invert(builder, value):
-    return builder.not_(value)
+# vector operations
 
-def vector_usub(builder, val):
-    return builder.sub(Constant.vector([Constant.int(val.type.base, 0)] * val.type.count))
+def vector_pack(builder, vector, values):
+    # TODO: remove and implement just in numba vectorobject.py?
+    ret = vector
+    for i in range(vector.type.count):
+        ret = builder.insertelement(ret, values[i])
+    return ret
 
-def vector_not(builder, value):
-    return builder.icmp(lc.ICMP_EQ, value, Constant.vector([Constant.int(value.type.base, 0)] * value.type.count))
+def vector_fill(builder, vector, value):
+    ret = vector
+    for i in range(vector.type.count):
+        ret = builder.insertelement(ret, value)
+    return ret
 
+# operators
 
 binop_int  = {
-     '+': (lc.Builder.add, lc.Builder.add),
-     '-': (lc.Builder.sub, lc.Builder.sub),
-     '*': (lc.Builder.mul, lc.Builder.mul),
-     '/': (lc.Builder.sdiv, lc.Builder.udiv),
-     '//': (lc.Builder.sdiv, lc.Builder.udiv),
-     '%': (lc.Builder.srem, lc.Builder.urem),
-     '&': (lc.Builder.and_, lc.Builder.and_),
-     '|': (lc.Builder.or_, lc.Builder.or_),
-     '^': (lc.Builder.xor, lc.Builder.xor),
-     '<<': (lc.Builder.shl, lc.Builder.shl),
-     '>>': (lc.Builder.ashr, lc.Builder.lshr),
-}
-
-binop_vector = {
      '+': (lc.Builder.add, lc.Builder.add),
      '-': (lc.Builder.sub, lc.Builder.sub),
      '*': (lc.Builder.mul, lc.Builder.mul),
@@ -115,7 +125,7 @@ binop_float = {
      '-': lc.Builder.fsub,
      '*': lc.Builder.fmul,
      '/': lc.Builder.fdiv,
-    '//': lc.Builder.fdiv,
+     '//': lc.Builder.fdiv,
      '%': lc.Builder.frem,
 }
 
@@ -134,13 +144,6 @@ unary_float = {
     '!': float_not,
     "+": lambda builder, arg: arg,
     "-": float_usub,
-}
-
-unary_vector = {
-    '~': vector_invert,
-    '!': vector_not,
-    "+": lambda builder, arg: arg,
-    "-": vector_usub,
 }
 
 #===------------------------------------------------------------------===
@@ -200,20 +203,18 @@ class Translator(object):
     # __________________________________________________________________
 
     def op_unary(self, op, arg):
+        t = op.type.base if op.type.is_vector else op.type
         opmap = { Boolean: unary_bool,
                   Integral: unary_int,
-                  Vector: unary_vector,
-                  Real: unary_float }[type(op.type)]
+                  Real: unary_float }[type(t)]
         unop = defs.unary_opcodes[op.opcode]
         return opmap[unop](self.builder, arg)
 
     def op_binary(self, op, left, right):
+        t = op.type.base if op.type.is_vector else op.type
         binop = defs.binary_opcodes[op.opcode]
-        if op.type.is_int:
-            genop = binop_int[binop][op.type.unsigned]
-        # TODO: is_vector
-        elif op.type.is_vector:
-            genop = binop_vector[binop][op.type.unsigned]
+        if t.is_int:
+            genop = binop_int[binop][t.unsigned]
         else:
             genop = binop_float[binop]
         return genop(self.builder, left, right, op.result)
@@ -221,6 +222,7 @@ class Translator(object):
     def op_compare(self, op, left, right):
         cmpop = defs.compare_opcodes[op.opcode]
         type = op.args[0].type
+        type = type.base if type.is_vector else type
         if type.is_int and type.unsigned:
             cmp, lop = self.builder.icmp, compare_unsiged_int[cmpop]
         elif type.is_int or type.is_bool:
@@ -235,12 +237,13 @@ class Translator(object):
     def op_convert(self, op, arg):
         if op.args[0].type == op.type:
             return arg
+        t = op.type.base if op.type.is_vector else op.type
         from llpython.byte_translator import LLVMCaster
-        unsigned = op.type.is_int and op.type.unsigned
-        # The float cast doens't accept this keyword argument
+        unsigned = t.is_int and t.unsigned
+        # The float cast doesn't accept this keyword argument
         kwds = {'unsigned': unsigned} if unsigned else {}
         return LLVMCaster.build_cast(self.builder, arg,
-                                     self.llvm_type(op.type), **kwds)
+                                     self.llvm_type(t), **kwds)
 
     # __________________________________________________________________
 

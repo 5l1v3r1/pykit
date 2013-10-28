@@ -136,6 +136,13 @@ extractfield       = op('extractfield/vo')
 insertfield        = op('insertfield/vov')
 
 # ______________________________________________________________________
+# Vectors
+
+extractelement     = op('extractelement/vv')  # (expr vector, int index)
+insertelement      = op('insertelement/vvv')  # (expr vector, expr value, int index)
+shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
+
+# ______________________________________________________________________
 # Basic operators
 
 # Binary

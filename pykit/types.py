@@ -79,7 +79,7 @@ UInt8   = Integral(8,  True)
 UInt16  = Integral(16, True)
 UInt32  = Integral(32, True)
 UInt64  = Integral(64, True)
-UInt128 = Integral(128, False)
+UInt128 = Integral(128, True)
 
 Float32  = Real(32)
 Float64  = Real(64)
@@ -109,8 +109,8 @@ ULongLong = Typedef("ULongLong", UInt32)
 
 # ______________________________________________________________________
 
-signed_set   = frozenset([Int8, Int16, Int32, Int64])
-unsigned_set = frozenset([UInt8, UInt16, UInt32, UInt64])
+signed_set   = frozenset([Int8, Int16, Int32, Int64, Int128])
+unsigned_set = frozenset([UInt8, UInt16, UInt32, UInt64, UInt128])
 int_set      = signed_set | unsigned_set
 float_set    = frozenset([Float32, Float64])
 # complex_set  = frozenset([Complex64, Complex128])
@@ -144,7 +144,6 @@ typing_defaults = {
     dict:       Dict,
     str:        Bytes,
     bytes:      Bytes,
-    vector:     Vector,
 }
 
 def typeof(value):
