@@ -8,6 +8,7 @@ from pykit.ir import Builder, Op, OpBuilder
 
 def lower_fields(func, env):
     b = Builder(func)
+    opbuilder = OpBuilder()
 
     for op in func.ops:
         if op.opcode not in ("getfield", "setfield"):
@@ -30,10 +31,12 @@ def lower_fields(func, env):
 
         if op.opcode == "getfield":
             struct, attr = op.args
-            newop = b.extractfield(op.type, struct, attr, result=op.result)
+            newop = opbuilder.extractfield(op.type, struct, attr,
+                                           result=op.result)
         else:
             struct, attr, value = op.args
-            newop = b.insertfield(op.type, struct, attr, value, result=op.result)
+            newop = opbuilder.insertfield(op.type, struct, attr, value,
+                                          result=op.result)
 
         op.replace(newop)
 
