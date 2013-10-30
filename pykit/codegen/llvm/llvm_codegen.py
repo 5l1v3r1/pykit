@@ -91,18 +91,11 @@ def float_not(builder, val):
 
 # vector operations
 
-def vector_pack(builder, vector, values):
-    # TODO: remove and implement just in numba vectorobject.py?
-    ret = vector
-    for i in range(vector.type.count):
-        ret = builder.insertelement(ret, values[i])
-    return ret
+def vector_pack(builder, values):
+    return builder.ret(Constant.vector(values))
 
-def vector_fill(builder, vector, value):
-    ret = vector
-    for i in range(vector.type.count):
-        ret = builder.insertelement(ret, value)
-    return ret
+def vector_fill(builder, value, count):
+    return builder.ret(Constant.vector([value] * count))
 
 # operators
 
