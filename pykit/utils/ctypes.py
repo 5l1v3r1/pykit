@@ -123,7 +123,7 @@ def from_ctypes_value(ctypes_value):
         values = [from_ctypes_value(getattr(ctypes_value, name)) for n in names]
         if not names:
             names, values = ('dummy',), (Const(0, types.Int8))
-        return Struct(name, values)
+        return Struct(name, values, from_ctypes_type(ctype))
     else:
         assert is_ctypes_pointer_type(ctype)
         return Pointer(ctypes.cast(ctypes_value, ctypes.c_void_p).value,

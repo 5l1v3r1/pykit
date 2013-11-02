@@ -71,6 +71,12 @@ def verify_module(mod):
         verify_function(function)
 
 def verify_function(func):
+    try:
+        _verify_function(func)
+    except Exception, e:
+        raise VerifyError("Error verifying function %s: %s" % (func.name, e))
+
+def _verify_function(func):
     """Verify a pykit function"""
     # Verify arguments
     assert len(func.args) == len(func.type.argtypes)

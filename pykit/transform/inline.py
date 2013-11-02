@@ -4,6 +4,8 @@
 Function inlining.
 """
 
+from __future__ import print_function, division, absolute_import
+
 from pykit.error import CompileError
 from pykit.analysis import loop_detection
 from pykit.ir import Function, Builder, findallops, copy_function, verify
