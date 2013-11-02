@@ -130,6 +130,12 @@ class Function(Value):
         label = self.temp(label)
         return self.add_block(Block(label, self, ops), after)
 
+    def add_arg(self, argname, argtype):
+        self.argnames.append(argname)
+        argtypes = tuple(self.type.argtypes) + (argtype,)
+        self.type = types.Function(self.type.restype, argtypes)
+        return self.get_arg(argname)
+
     def add_block(self, block, after=None):
         """Add a Block at the end, or after `after`"""
         if block.parent is None:
@@ -616,9 +622,10 @@ class Pointer(Value):
 class Struct(Value):
     """Represents a constant Struct value"""
 
-    def __init__(self, names, values):
+    def __init__(self, names, values, type):
         self.names = names
         self.values = values
+        self.type = type
 
     def __eq__(self, other):
         return isinstance(other, Struct) and self.names == other.names
