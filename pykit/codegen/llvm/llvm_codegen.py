@@ -406,7 +406,7 @@ class LLVMArgLoader(ArgLoader):
         return make_constant(arg.const, arg.type)
 
     def load_Pointer(self, arg):
-        return const_i64(arg.base).inttoptr(llvm_type(arg.type))
+        return const_i64(arg.addr).inttoptr(llvm_type(arg.type))
 
     def load_Struct(self, arg):
         return make_constant(arg, arg.type)
@@ -424,6 +424,7 @@ def make_constant(value, ty):
     lty = llvm_type(ty)
 
     if type(ty) == Pointer:
+        value = value.addr
         if value == 0:
             return lc.Constant.null(lty)
         elif isinstance(value, (int, long)):

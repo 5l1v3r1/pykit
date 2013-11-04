@@ -607,16 +607,16 @@ class Constant(Value):
 class Pointer(Value):
     """Pointer to constant value"""
 
-    def __init__(self, base, type):
-        self.base = base
+    def __init__(self, addr, type):
+        self.addr = addr
         self.type = type
 
     def __eq__(self, other):
-        return (isinstance(other, Pointer) and self.base == other.base and
+        return (isinstance(other, Pointer) and self.addr == other.addr and
                 self.type == other.type)
 
     def __repr__(self):
-        return "((%s) %s)" % (self.type, self.base)
+        return "((%s) %s)" % (self.type, self.addr)
 
 
 class Struct(Value):
