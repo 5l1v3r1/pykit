@@ -1,0 +1,2 @@
+python pykit/utils/_generate.py > /tmp/_generated.py
+cat genheader.py /tmp/_generated.py > pykit/ir/_generated.py
