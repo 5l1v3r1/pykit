@@ -6,7 +6,7 @@ import unittest
 
 from pykit import types
 from pykit import ir
-from pykit.utils.ctypes import from_ctypes_type, from_ctypes_value
+from pykit.utils.ctypes_support import from_ctypes_type, from_ctypes_value
 
 class MyStruct(ctypes.Structure):
     _fields_ = [('x', ctypes.c_float), ('y', ctypes.c_int64)]

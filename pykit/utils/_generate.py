@@ -7,6 +7,7 @@ Generate some internal code.
 from __future__ import absolute_import
 from collections import defaultdict
 from os.path import splitext
+
 from pykit.ir import ops, defs
 
 def getorder():
