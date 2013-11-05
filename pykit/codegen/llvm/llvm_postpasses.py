@@ -17,7 +17,7 @@ def postpass_link_math(ee, lmod, lfunc):
     replacements = {}
     for lf in lmod.functions:
         if lf.name.startswith('pykit.math.'):
-            _, _, name = lf.name.partition('.')
+            _, _, name = lf.name.rpartition('.')
             replacements[lf.name] = name
     del lf # this is dead after linking below
 

@@ -223,7 +223,7 @@ class Translator(object):
 
     def op_call_math(self, op, name, args):
         # Math is resolved by an LLVM postpass
-        argtypes = [arg.type for arg in args]
+        argtypes = [arg.type for arg in op.args[1]]
         lfunc_type = self.llvm_type(Function(op.type, argtypes))
         lfunc = self.lmod.get_or_insert_function(
             lfunc_type, 'pykit.math.%s.%s' % (map(str, argtypes), name.lower()))
