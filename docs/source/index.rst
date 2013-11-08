@@ -20,5 +20,4 @@ Contents:
     ir.rst
     pipeline.rst
     runtime.rst
-    opt_examples.rst
     faq.rst
