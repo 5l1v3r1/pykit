@@ -1,39 +1,51 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Pykit by pykit</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
-
-    <title>Pykit by markflorisson88</title>
   </head>
-
   <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/pykit/pykit">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/pykit/pykit/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/pykit/pykit/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
 
-    <header>
-      <div class="container">
-        <h1>Pykit</h1>
-        <h2>Backend compiler for high-level typed code with first-class support for multi-dimensional arrays, objects and complex numbers.</h2>
+    <div class="wrapper">
 
-        <section id="downloads">
-          <a href="https://github.com/markflorisson88/pykit/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/markflorisson88/pykit/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/markflorisson88/pykit" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
-        </section>
-      </div>
-    </header>
+      <section>
+        <div id="title">
+          <h1>Pykit</h1>
+          <p>Backend compiler for high-level typed code with first-class support for multi-dimensional arrays, objects and complex numbers.</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/pykit">pykit</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
 
-    <div class="container">
-      <section id="main_content">
         <h1>
 <a name="pykit" class="anchor" href="#pykit"><span class="octicon octicon-link"></span></a>pykit</h1>
 
 <p>Backend compiler for high-level typed code with first-class support for
-multi-dimensional arrays, objects, complex numbers, list tuples and dicts,
-higher-order functions and sum/union-types.</p>
+multi-dimensional arrays, list tuples and dicts. High-level operations
+are optimized and must be lowered to a runtime implementation. Provided
+runtime implementations are in place for memory management and garbage
+collection, exceptions and threads.</p>
 
 <p>Pykit tries to address an ever-growing number of compilers in the Python
 community, with a focus on array-oriented numerical code.</p>
@@ -49,12 +61,18 @@ community, with a focus on array-oriented numerical code.</p>
 <p>pykit is inspired by VMKit and LLVM.</p>
 
 <h1>
+<a name="website" class="anchor" href="#website"><span class="octicon octicon-link"></span></a>Website</h1>
+
+<p><a href="http://pykit.github.io/pykit/">http://pykit.github.io/pykit/</a></p>
+
+<h1>
 <a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h1>
 
-<p><a href="http://markflorisson88.github.io/pykit-doc/dev/">http://markflorisson88.github.io/pykit-doc/dev/</a></p>
+<p><a href="http://pykit.github.io/pykit-doc/">http://pykit.github.io/pykit-doc/</a></p>
       </section>
-    </div>
 
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
     
   </body>
 </html>
