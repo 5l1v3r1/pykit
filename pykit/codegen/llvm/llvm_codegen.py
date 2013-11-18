@@ -390,7 +390,9 @@ class LLVMArgLoader(ArgLoader):
 
     def load_GlobalValue(self, arg):
         if arg.external:
-            value = self.lmod.get_or_insert_function(llvm_type(arg.type))
+            fnty = llvm_type(arg.type)
+            value = self.llvm_module.get_or_insert_function(fnty,
+                                                            name=arg.name)
             if arg.address:
                 self.engine.add_global_mapping(value, arg.address)
         else:
