@@ -97,7 +97,7 @@ def from_ctypes_type(ctypes_type):
     elif is_ctypes_function_type(ctypes_type):
         c_restype = from_ctypes_type(ctypes_type._restype_)
         c_argtypes = [from_ctypes_type(argty) for argty in ctypes_type._argtypes_]
-        return types.Function(c_restype, c_argtypes)
+        return types.Function(c_restype, c_argtypes, False)
     else:
         raise NotImplementedError(ctypes_type)
 

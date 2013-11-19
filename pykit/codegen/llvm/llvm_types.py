@@ -23,7 +23,8 @@ def llvm_type(type):
         return Type.pointer(llvm_type(type.base))
     elif ty == Function:
         return Type.function(llvm_type(type.restype),
-                             [llvm_type(argtype) for argtype in type.argtypes])
+                             [llvm_type(argtype) for argtype in type.argtypes],
+                             var_arg=type.varargs)
     elif ty == VoidT:
         return Type.void()
     else:

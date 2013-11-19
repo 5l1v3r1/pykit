@@ -10,7 +10,7 @@ from pykit.optimizations import local_exceptions
 class TestLocalExceptionRewriting(unittest.TestCase):
 
     def test_exc_rewrite(self):
-        func = Function("foo", [], types.Function(types.Void, ()))
+        func = Function("foo", [], types.Function(types.Void, (), False))
         entry = func.new_block("entry")
         catch_block = func.new_block("catch")
         b = Builder(func)

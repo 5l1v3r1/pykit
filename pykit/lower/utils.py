@@ -39,7 +39,8 @@ class RuntimeLowering(object):
         """
         _verify_args(op)
         if insert_decl and not self.mod.get_global(op.opcode):
-            signature = types.Function(op.type, [arg.type for arg in op.args])
+            signature = types.Function(op.type, [arg.type for arg in op.args],
+                                       False)
             self.mod.add_global(GlobalValue(op.opcode, signature, external=True))
 
         call = self.builder.gen_call_external(op.opcode, op.args, op.result)

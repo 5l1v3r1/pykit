@@ -172,7 +172,7 @@ class Codegen(object):
         argtypes = [map_type(i.type) for i in function.inputs]
 
         restype = type_from_outputs(function.outputs)
-        signature = types.Function(restype, argtypes)
+        signature = types.Function(restype, argtypes, False)
 
         # Setup up pykit function
         self.func = ir.Function("theano_func", argnames, signature)

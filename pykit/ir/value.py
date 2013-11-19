@@ -133,7 +133,8 @@ class Function(Value):
     def add_arg(self, argname, argtype):
         self.argnames.append(argname)
         argtypes = tuple(self.type.argtypes) + (argtype,)
-        self.type = types.Function(self.type.restype, argtypes)
+        self.type = types.Function(self.type.restype, argtypes,
+                                   self.type.varargs)
         return self.get_arg(argname)
 
     def add_block(self, block, after=None):

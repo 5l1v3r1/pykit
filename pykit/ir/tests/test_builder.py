@@ -43,7 +43,7 @@ class TestBuilder(unittest.TestCase):
 
     def setUp(self):
         self.f = Function("testfunc", ['a'],
-                          types.Function(types.Float32, [types.Int32]))
+                          types.Function(types.Float32, [types.Int32], False))
         self.b = Builder(self.f)
         self.b.position_at_end(self.f.new_block('entry'))
         self.a = self.f.get_arg('a')

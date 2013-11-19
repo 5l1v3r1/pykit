@@ -46,7 +46,7 @@ Pointer    = typetuple('Pointer',  ['base'])
 Tuple      = typetuple('Tuple',    ['bases'])
 List       = typetuple('List',     ['base', 'count'])  # count == -1 if unknown
 Dict       = typetuple('Dict',     ['key', 'value', 'count'])
-Function   = typetuple('Function', ['restype', 'argtypes'])
+Function   = typetuple('Function', ['restype', 'argtypes', 'varargs'])
 ExceptionT = typetuple('Exception',[])
 BytesT     = typetuple('Bytes',    [])
 OpaqueT    = typetuple('Opaque',   []) # Some type we make zero assumptions about

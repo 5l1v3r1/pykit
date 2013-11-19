@@ -236,7 +236,7 @@ class PykitIRVisitor(c_ast.NodeVisitor):
             params = self.visits(decl.args.params)
         else:
             params = []
-        return types.Function(self.visit(decl.type), params)
+        return types.Function(self.visit(decl.type), params, False)
 
     def visit_IdentifierType(self, node):
         name, = node.names
