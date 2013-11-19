@@ -111,6 +111,7 @@ call_math          = op('call_math/ol')       # str name, expr *args
 # ______________________________________________________________________
 # sizeof
 
+addressof          = op('addressof/v')        # expr obj
 sizeof             = op('sizeof/v')           # expr obj
 
 # ______________________________________________________________________

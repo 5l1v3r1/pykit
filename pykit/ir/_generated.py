@@ -181,6 +181,16 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
+    def addressof(self, type, value0, **kwds):
+        assert isinstance(value0, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('addressof', type, [value0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
     def sizeof(self, type, value0, **kwds):
         assert isinstance(value0, Value)
         assert type is not None

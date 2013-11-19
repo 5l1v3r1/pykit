@@ -314,7 +314,8 @@ class Translator(object):
     def op_addressof(self, op, func):
         assert func.address
         addr = const_int(i64, func.address)
-        return self.builder.inttoptr(addr, self.llvm_type(Pointer(func.type)))
+        return self.builder.inttoptr(
+            addr, self.llvm_type(types.Pointer(types.Void)))
 
     # __________________________________________________________________
 
