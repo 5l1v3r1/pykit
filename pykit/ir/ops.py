@@ -143,6 +143,12 @@ insertelement      = op('insertelement/vvv')  # (expr vector, expr value, int in
 shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
 
 # ______________________________________________________________________
+# Arrays
+
+extractvalue       = op('extractvalue/vv')  # (expr array, int index)
+insertvalue        = op('insertvalue/vvv')  # (expr array, expr value, int index)
+
+# ______________________________________________________________________
 # Basic operators
 
 # Binary

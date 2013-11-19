@@ -115,7 +115,7 @@ class Builder(OpBuilder):
     Also provides convenience operations, such as loops, guards, etc.
     """
 
-    def __init__(self, func):
+    def w__init__(self, func):
         self.func = func
         self.module = func.module
         self._curblock = None
