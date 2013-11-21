@@ -643,11 +643,11 @@ class Undef(Value):
     def __init__(self, type):
         self.type = type
 
-    def __eq__(self, other):
-        return isinstance(other, Undef) and self.type == other.type
-
-    def __hash__(self):
-        return hash(type(self))
+    #def __eq__(self, other):
+    #    return isinstance(other, Undef) and self.type == other.type
+    #
+    #def __hash__(self):
+    #    return hash(type(self))
 
 Op = Operation
 Const = Constant

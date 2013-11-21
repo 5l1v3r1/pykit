@@ -62,7 +62,7 @@ def fglobal(val):
     return "global %{0} = {1}".format(val.name, ftype(val.type))
 
 def fundef(val):
-    return 'Undef'
+    return '((%s) Undef)' % (val.type,)
 
 def ftype(val):
     from pykit import types
