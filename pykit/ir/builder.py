@@ -137,11 +137,11 @@ class Builder(OpBuilder):
             self._curblock.append(op)
         else:
             lastop = self._lastop
-            #if ops.is_leader(lastop.opcode) and not ops.is_leader(op.opcode):
-            #    for firstop in lastop.block.ops:
-            #        if not ops.is_leader(firstop.opcode):
-            #            lastop = firstop
-            #            break
+            if ops.is_leader(lastop.opcode) and not ops.is_leader(op.opcode):
+                for firstop in lastop.block.ops:
+                    if not ops.is_leader(firstop.opcode):
+                        lastop = firstop
+                        break
 
             op.insert_after(lastop)
         self._lastop = op
