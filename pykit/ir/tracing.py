@@ -67,8 +67,9 @@ class Tracer(object):
                                     item.func.name, _format_args(item.args)))
             self.call(item.func)
         elif isinstance(item, Op):
-            self.emit("op %%%5s: %15s%-80s" % (item.op.result, item.op.opcode,
-                                             '(' + _format_args(item.args) + ')'),
+            opcode = item.op.opcode
+            args = "(%s)" % _format_args(item.args)
+            self.emit("op %%%-5s: %-80s" % (item.op.result, opcode + args),
                       end='')
         elif isinstance(item, Res):
             if item.result is not None:
