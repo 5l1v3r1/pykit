@@ -20,14 +20,14 @@ import numpy as np
 
 from pykit import types
 from pykit.ir import Function, Block, GlobalValue, Const, combine, ArgLoader
-from pykit.ir import ops, linearize, defs
+from pykit.ir import ops, linearize, defs, tracing
 from pykit.utils import ValueDict
 
 #===------------------------------------------------------------------===
 # Interpreter
 #===------------------------------------------------------------------===
 
-Undef = object()                        # Undefined/uninitialized value
+Undef = "Undef"                         # Undefined/uninitialized value
 State = namedtuple('State', ['refs'])   # State shared by stack frames
 
 class Reference(object):
@@ -420,12 +420,18 @@ class InterpArgLoader(ArgLoader):
     def load_Undef(self, arg):
         return Undef
 
-
-def run(func, env=None, exc_model=None, _state=None, args=()):
+def run(func, env=None, exc_model=None, _state=None, args=(),
+        tracer=tracing.DummyTracer()):
     """
     Interpret function. Raises UncaughtException(exc) for uncaught exceptions
     """
     assert len(func.args) == len(args)
+
+    tracer.push(tracing.Call(func, args))
+
+    # -------------------------------------------------
+    # Set up interpreter
+
 
     valuemap = dict(zip(func.argnames, args)) # { '%0' : pyval }
     argloader = InterpArgLoader(valuemap)
@@ -436,28 +442,53 @@ def run(func, env=None, exc_model=None, _state=None, args=()):
     else:
         handlers = {}
 
+    # -------------------------------------------------
+    # Eval loop
+
     curblock = None
     while True:
+        # -------------------------------------------------
+        # Block transitioning
+
         op = interp.op
         if op.block != curblock:
             interp.blockswitch(curblock, op.block)
             curblock = op.block
+
+        # -------------------------------------------------
+        # Find handler
 
         if op.opcode in handlers:
             fn = partial(handlers[op.opcode], interp)
         else:
             fn = getattr(interp, op.opcode)
 
+        # -------------------------------------------------
+        # Load arguments
+
         args = argloader.load_args(op)
 
+        # -------------------------------------------------
         # Execute...
+
+        tracer.push(tracing.Op(op, args))
+
         oldpc = interp.pc
-        result = fn(*args)
+        try:
+            result = fn(*args)
+        except UncaughtException, e:
+            tracer.push(tracing.Exc(e))
+            raise
         valuemap[op.result] = result
 
+        tracer.push(tracing.Res(op, args, result))
+
+        # -------------------------------------------------
         # Advance PC
+
         if oldpc == interp.pc:
             interp.incr_pc()
         elif interp.pc == -1:
             # Returning...
+            tracer.push(tracing.Ret(result))
             return result
