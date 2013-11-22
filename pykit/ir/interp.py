@@ -156,10 +156,6 @@ class Interp(object):
     def function(self, funcname):
         return self.func.module.get_function(funcname)
 
-    def partial(self, function, *args):
-        if isinstance(function, Function):
-            return lambda *more: self.call(function, *(args + more))
-
     def call(self, func, args):
         if isinstance(func, Function):
             # We're calling another known pykit function,
@@ -175,49 +171,18 @@ class Interp(object):
     def call_math(self, fname, *args):
         return defs.math_funcs[fname](*args)
 
-    def call_external(self):
-        pass
-
-    def call_virtual(self):
-        pass
-
     # __________________________________________________________________
     # Attributes
 
-    getfield = getattr
-    setfield = setattr
+    def getfield(self, obj, attr):
+        if obj['value'] is Undef:
+            return Undef
+        return obj['value'][attr] # structs are dicts
 
-    # __________________________________________________________________
-    # Index
-
-    getindex = operator.getitem
-    setindex = operator.setitem
-    getslice = operator.getitem
-    setslice = operator.setitem
-    slice = slice
-
-    # __________________________________________________________________
-    # Arrays
-
-    allpairs = product # hmm
-
-    def map(self, f, args, axes):
-        assert not axes # TODO
-        u = np.vectorize(f)
-        return u(*args)
-
-    def reduce(self, f, arg, axes):
-        assert not axes # TODO
-        if isinstance(arg, np.ndarray):
-            arg = arg.flatten()
-        return reduce(f, arg)
-
-    def scan(self, f, arg, axes):
-        assert not axes # TODO
-        result = arg.copy().flatten()
-        for i, x in enumerate(arg.flatten()[1:]):
-            result[i+1] = f(result[i], result[i+1])
-        return result
+    def setfield(self, obj, attr, value):
+        if obj['value'] is Undef:
+            obj['value'] = {}
+        obj['value'][attr] = value
 
     # __________________________________________________________________
 
@@ -242,31 +207,6 @@ class Interp(object):
     def func_from_addr(self, ptr):
         type = self.op.type
         return ctypes.cast(ptr, types.to_ctypes(type))
-
-    # __________________________________________________________________
-    # iterators
-
-    getiter = iter
-
-    def next(self, it):
-        try:
-            return next(it)
-        except Exception as e:
-            self.exc_throw(e)
-
-    # __________________________________________________________________
-    # Primitives
-
-    max = max
-    min = min
-
-    # __________________________________________________________________
-    # Constructors
-
-    new_list    = list
-    new_tuple   = tuple
-    new_set     = set
-    new_dict    = lambda self, keys, values: dict(zip(keys, values))
 
     # __________________________________________________________________
     # Control flow
