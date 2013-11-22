@@ -32,7 +32,7 @@ def ssa(func, cfg):
     prune_phis(func)
     simplify(func, cfg)
 
-def cfg(func):
+def cfg(func, view=False):
     """
     Compute the control flow graph for `func`
     """
@@ -58,6 +58,11 @@ def cfg(func):
         cfg.add_node(block)
         for target in targets:
             cfg.add_edge(block, target)
+
+    if view:
+        import matplotlib.pyplot as plt
+        nx.draw(cfg)
+        plt.draw()
 
     return cfg
 
@@ -164,11 +169,18 @@ def compute_dataflow(func, cfg, allocas, phis):
 def prune_phis(func):
     """Delete unnecessary phis (all incoming values equivalent)"""
     for op in func.ops:
-        if op.opcode == 'phi' and not func.uses[op]:
-            op.delete()
-        elif op.opcode == 'phi' and  len(set(op.args[1])) == 1:
-            op.replace_uses(op.args[1][0])
-            op.delete()
+        if op.opcode == 'phi':
+            blocks, args = op.args
+            if not func.uses[op]:
+                op.delete()
+            elif len(set(args)) == 1:
+                [arg] = set(args)
+                op.replace_uses(arg)
+                op.delete()
+            elif len(args) == 2 and op in args:
+                [arg] = set(args) - set([op])
+                op.replace_uses(arg)
+                op.delete()
 
 # ______________________________________________________________________
 
