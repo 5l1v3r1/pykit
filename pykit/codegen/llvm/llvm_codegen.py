@@ -216,10 +216,16 @@ class Translator(object):
         if isinstance(function, ir.Function):
             cache = self.env["codegen.cache"]
             lfunc = cache[function]
+            if lfunc.module is not self.lmod:
+                lfunc = self.lmod.get_or_insert_function(lfunc.type.pointee,
+                                                         lfunc.name)
         else:
             lfunc = function # function pointer
 
-        return self.builder.call(lfunc, args)
+        # Declare the function if it is not from this module
+
+        call = self.builder.call(lfunc, args)
+        return call
 
     def op_call_math(self, op, name, args):
         # Math is resolved by an LLVM postpass
