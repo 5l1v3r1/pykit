@@ -216,13 +216,13 @@ class Translator(object):
         if isinstance(function, ir.Function):
             cache = self.env["codegen.cache"]
             lfunc = cache[function]
+
+            # Declare the function if it is not from this module
             if lfunc.module is not self.lmod:
                 lfunc = self.lmod.get_or_insert_function(lfunc.type.pointee,
                                                          lfunc.name)
         else:
             lfunc = function # function pointer
-
-        # Declare the function if it is not from this module
 
         call = self.builder.call(lfunc, args)
         return call
