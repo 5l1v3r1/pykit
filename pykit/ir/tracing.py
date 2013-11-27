@@ -69,8 +69,9 @@ class Tracer(object):
         elif isinstance(item, Op):
             opcode = item.op.opcode
             args = "(%s)" % _format_args(item.args)
-            self.emit("op %%%-5s: %-80s" % (item.op.result, opcode + args),
-                      end='')
+            self.emit("%-10s: op %%%-5s: %-80s" % (item.op.block.name,
+                                                   item.op.result,
+                                                   opcode + args), end='')
         elif isinstance(item, Res):
             if item.result is not None:
                 self.emit(" -> %s" % (_format_arg(item.result),))
