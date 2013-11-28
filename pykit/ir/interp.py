@@ -119,14 +119,6 @@ class Interp(object):
     def convert(self, arg):
         return types.convert(arg, self.op.type)
 
-    def check_overflow(self, value):
-        assert self.op.type.is_int
-        bits = self.op.type.bits / 2
-        lower = 2 ** -bits
-        upper = 2 ** bits - 1
-        if not lower <= value <= upper:
-            raise OverflowError(value, self.op, lower, upper)
-
     # __________________________________________________________________
     # Var
 
@@ -280,87 +272,6 @@ class Interp(object):
     def yieldval(self, op):
         pass # TODO:
 
-    # __________________________________________________________________
-    # Closures
-
-    def make_cell(self):
-        return { 'cell': Undef }
-
-    def load_cell(self, cell):
-        assert cell['cell'] is not Undef
-        return cell['cell']
-
-    def store_cell(self, cell, value):
-        cell['cell'] = value
-
-    def make_frame(self, parent, names):
-        values = dict((name, Undef) for name in names)
-        values['_parent_frame'] = parent
-        return ValueDict(values)
-
-    # __________________________________________________________________
-    # Threads
-
-    thread_start      = noop
-    thread_join       = noop
-    threadpool_start  = noop
-    threadpool_submit = noop
-    threadpool_join   = noop
-    threadpool_close  = noop
-
-    def load_vtable(self, op):
-        pass
-
-    def vtable_lookup(self, op):
-        pass
-
-    # __________________________________________________________________
-    # GC/Refcounting
-
-    def _checkref(self, obj):
-        assert id(obj) in self.refs
-        ref = self.refs[id(obj)]
-        assert ref.obj is obj
-        assert ref.refcount >= 1
-
-    def gc_incref(self, obj):
-        self._checkref(obj)
-        ref = self.refs[id(obj)]
-        ref.refcount += 1
-
-    def gc_decref(self, obj):
-        self._checkref(obj)
-        ref = self.refs[id(obj)]
-        ref.refcount -= 1
-        if ref.refcount == 0:
-            del self.refs[id(obj)]
-
-    def gc_gotref(self, obj):
-        assert id(obj) not in self.refs
-        self.refs[id(obj)] = 1
-
-    def gc_giveref(self, obj):
-        self._checkref(obj)
-
-    def gc_alloc(self, n):
-        result = np.empty(n, dtype=np.object)
-        result[...] = Undef
-        return result
-
-    def gc_dealloc(self, value):
-        value[...] = Undef
-
-    def gc_collect(self, op):
-        pass
-
-    def gc_read_barrier(self, op):
-        pass
-
-    def gc_traverse(self, op):
-        pass
-
-    def gc_write_barrier(self, op):
-        pass
 
 # Set unary, binary and compare operators
 for opname, evaluator in chain(defs.unary.items(), defs.binary.items(),
