@@ -264,8 +264,11 @@ class Interp(object):
 
         for block in self.exc_handlers:
             for leader in block.leaders:
-                if (leader.opcode == ops.exc_catch and
-                        self._exc_match(leader.args)):
+                if leader.opcode != ops.exc_catch:
+                    continue
+
+                args = [arg.const for arg in leader.args[0]]
+                if self._exc_match(args):
                     return leader
 
     # __________________________________________________________________
