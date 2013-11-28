@@ -112,13 +112,19 @@ def make_temper():
     """Return a function that returns temporary names"""
     temps = collections.defaultdict(int)
 
-    def temper(name=""):
-        varname = name.rstrip(string.digits)
+    def temper(input=""):
+        name, dot, tail = input.partition('.')
+        if tail.isdigit():
+            varname = name
+        else:
+            varname = input
+
         count = temps[varname]
         temps[varname] += 1
         if varname and count == 0:
             return varname
-        return varname + str(count)
+
+        return "%s.%d" % (varname, count)
 
     return temper
 
