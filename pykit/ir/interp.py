@@ -64,7 +64,7 @@ class Interp(object):
         refs:           { id(obj) : Reference }
     """
 
-    def __init__(self, func, env, exc_model, argloader, state):
+    def __init__(self, func, env, exc_model, argloader, tracer):
         self.func = func
         self.env = env
         self.exc_model = exc_model
@@ -73,6 +73,7 @@ class Interp(object):
         self.state = {
             'env':       env,
             'exc_model': exc_model,
+            'tracer':    tracer,
         }
 
         self.ops, self.blockstarts = linearize(func)
@@ -81,8 +82,6 @@ class Interp(object):
         self.prevblock = None
         self.exc_handlers = None
         self.exception = None
-
-        self.refs = state.refs
 
     # __________________________________________________________________
     # Utils
@@ -401,16 +400,6 @@ class ExceptionModel(object):
 # Run
 #===------------------------------------------------------------------===
 
-def _init_state(func, args):
-    """Initialize refcount state"""
-    refcounts = {}
-    return State(refcounts) # todo
-    for param, arg in zip(func.args, args):
-        if param.type.managed:
-            refcounts[id(arg)] = Reference(obj=arg, refcount=1, producer=param)
-
-    return State(refcounts)
-
 class InterpArgLoader(ArgLoader):
 
     def load_GlobalValue(self, arg):
@@ -436,7 +425,7 @@ def run(func, env=None, exc_model=None, _state=None, args=(),
     valuemap = dict(zip(func.argnames, args)) # { '%0' : pyval }
     argloader = InterpArgLoader(valuemap)
     interp = Interp(func, env, exc_model or ExceptionModel(),
-                    argloader, state=_state or _init_state(func, args))
+                    argloader, tracer)
     if env:
         handlers = env.get("interp.handlers") or {}
     else:
