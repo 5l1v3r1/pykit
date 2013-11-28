@@ -46,6 +46,7 @@ class Tracer(object):
         """
         self.stmts = []
         self.record = record
+        self.beginning = True
 
         self.callstack = [] # stack of function calls
         self.indent = 0     # indentation level
@@ -90,10 +91,15 @@ class Tracer(object):
         elif isinstance(item, Exc):
             self.emit("\n")
             self.emit(" <-------- propagating %s from %s" % (item.exc,
-                                                             self.func))
+                                                             self.func.name))
             self.ret()
 
     def emit(self, s, end="\n"):
+        if self.beginning:
+            parts = self.func.name.split(".")[-2:]
+            name = ".".join(parts)
+            print("%-20s: " % name, end="")
+        self.beginning = (end == "\n")
         print(" " * self.indent + s, end=end)
 
     def call(self, func):

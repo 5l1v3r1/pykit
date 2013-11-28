@@ -130,7 +130,7 @@ class Interp(object):
         return var['value']
 
     def store(self, value, var):
-        if isinstance(value, dict):
+        if isinstance(value, dict) and set(value) == set(['type', 'value']):
             value = value['value']
         var['value'] = value
 
