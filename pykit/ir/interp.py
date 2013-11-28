@@ -130,6 +130,8 @@ class Interp(object):
         return var['value']
 
     def store(self, value, var):
+        if isinstance(value, dict):
+            value = value['value']
         var['value'] = value
 
     def phi(self):
