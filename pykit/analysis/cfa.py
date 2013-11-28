@@ -251,11 +251,14 @@ def simplify(func, cfg):
 # Block Removal
 #===------------------------------------------------------------------===
 
+def find_dead_blocks(func, cfg):
+    """Find all immediate dead blocks"""
+    return [block for block in cfg if not cfg.predecessors(block)
+                      if block != func.startblock]
+
 def delete_blocks(func, cfg, deadblocks):
     """
-    Apply the result of the SCCP analysis:
-
-        - remove unreachable code blocks
+    Remove unreachable code blocks listed by `deadblocks`.
     """
     for block in deadblocks:
         func.del_block(block)
