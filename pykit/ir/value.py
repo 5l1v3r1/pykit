@@ -7,6 +7,7 @@ An operation is
 
 from __future__ import print_function, division, absolute_import
 from itertools import chain
+from functools import partial
 from collections import defaultdict
 
 from pykit import error, types
@@ -651,3 +652,4 @@ class Undef(Value):
 
 Op = Operation
 Const = Constant
+OConst = partial(Constant, type=types.Opaque)
