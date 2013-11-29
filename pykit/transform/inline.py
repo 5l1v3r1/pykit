@@ -26,6 +26,7 @@ def inline(func, call):
     :return: { old_op : new_op }
     """
     callee = call.args[0]
+    callblock = call.block
     # assert_inlinable(func, call, callee, uses)
 
     builder = Builder(func)
@@ -51,12 +52,7 @@ def inline(func, call):
     with builder.at_end(new_callee.exitblock):
         builder.jump(inline_exit)
 
-    # Replicate exc_setup
-    setups = [op for op in call.block.leaders if op.opcode == 'exc_setup']
-    for block in new_blocks:
-        builder.position_at_beginning(block)
-        for setup in setups:
-            builder.exc_setup(setup.args[0])
+    stretch_exception_block(builder, callblock, new_blocks)
 
     # Fix up final result of call
     if result is not None:
@@ -71,6 +67,42 @@ def inline(func, call):
     verify(func)
 
     return valuemap
+
+
+def stretch_exception_block(builder, originating_block, new_blocks):
+    """
+    Replicate exc_setup across `new_blocks` that were introduced from
+    `originating_block` by inlining.
+    """
+    # Replicate exc_setup
+    setups = [op for op in originating_block.leaders if op.opcode == 'exc_setup']
+    for block in new_blocks:
+        builder.position_at_beginning(block)
+        for setup in setups:
+            builder.exc_setup(setup.args[0])
+
+    for setup in setups:
+        [successors] = setup.args # exception handling blocks
+
+        # Patch phis in exception handling blocks for new predecessors
+        for successor in successors:
+            for op in successor.leaders:
+                if op.opcode == 'phi':
+                    blocks, values = map(list, op.args)
+
+                    # Find value for original predecessor
+                    idx = blocks.index(originating_block)
+                    value = values[idx]
+
+                    # Patch value for new predecessors
+                    for block in new_blocks:
+                        if block not in blocks:
+                            # We found a new predecessor!
+                            blocks.append(block)
+                            values.append(value)
+
+                    op.set_args([blocks, values])
+
 
 def assert_inlinable(func, call, callee, uses):
     """
