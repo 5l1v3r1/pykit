@@ -25,12 +25,25 @@ Exc  = namedtuple('Exc',  ['exc'])
 # Tracer
 #===------------------------------------------------------------------===
 
+def reprobj(obj):
+    try: return str(obj)
+    except Exception: pass
+
+    try: return repr(obj)
+    except Exception: pass
+
+    try: return "Unprintable(%s)" % (vars(obj),)
+    except Exception: pass
+
+    return "<unprintable object %s>" % (type(obj),)
+
+
 def _format_arg(arg):
     if isinstance(arg, Value):
         return repr(arg)
     elif isinstance(arg, dict) and sorted(arg) == ['type', 'value']:
         return '{value=%s}' % (arg['value'],)
-    return str(arg)
+    return reprobj(arg)
 
 def _format_args(args):
     return ", ".join(map(str, nestedmap(_format_arg, args)))
