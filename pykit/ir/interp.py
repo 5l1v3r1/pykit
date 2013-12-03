@@ -184,9 +184,10 @@ class Interp(object):
     # __________________________________________________________________
     # Pointer
 
-    def ptradd(self, ptr, addition):
-        val = ctypes.cast(ptr, ctypes.c_void_p).value
-        return ctypes.cast(val, type(ptr))
+    def ptradd(self, ptr, addend):
+        value = ctypes.cast(ptr, ctypes.c_void_p).value
+        itemsize = ctypes.sizeof(type(ptr)._type_)
+        return ctypes.cast(value + itemsize * addend, type(ptr))
 
     def ptrload(self, ptr):
         return ptr[0]
