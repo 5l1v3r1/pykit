@@ -24,7 +24,7 @@ def module(name):
 def execution_engine(llvm_module, target_machine):
     return llvm.ee.EngineBuilder.new(llvm_module).create(target_machine)
 
-def optimize(llvm_module, target_machine, opt=3, inline=1000):
+def optimize(llvm_module, target_machine, opt=3, inline=None):
     has_loop_vectorizer = llvm.version >= (3, 2)
     passmanagers = llvm.passes.build_pass_managers(
         target_machine, opt=opt, inline_threshold=inline,
