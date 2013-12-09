@@ -32,7 +32,7 @@ def ssa(func, cfg):
     prune_phis(func)
     simplify(func, cfg)
 
-def cfg(func, view=False):
+def cfg(func, view=False, exceptions=True):
     """
     Compute the control flow graph for `func`
     """
@@ -48,7 +48,7 @@ def cfg(func, view=False):
         # Deduce CFG edges from exc_setup
 
         for op in block.leaders:
-            if op.opcode == 'exc_setup':
+            if op.opcode == 'exc_setup' and exceptions:
                 [exc_handlers] = op.args
                 targets.extend(exc_handlers)
 
