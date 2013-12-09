@@ -196,7 +196,7 @@ class Builder(OpBuilder):
     def _position(self, block, position):
         curblock, lastop = self._curblock, self._lastop
         position(block)
-        yield
+        yield self
         self._curblock, self._lastop = curblock, lastop
 
     at_front = lambda self, b: self._position(b, self.position_at_beginning)
@@ -330,3 +330,17 @@ class Builder(OpBuilder):
 
         self.position_at_beginning(body)
         return cond, body, exit
+
+    # --- predecessors --- #
+
+    def replace_predecessor(self, former_pred, new_pred, succ):
+        """
+        Replace `former_pred` with `new_pred` as a predecessor of block `succ`.
+        """
+        for op in succ:
+            if op.opcode == 'phi':
+                blocks, vals = op.args
+                d = dict(zip(blocks, blocks))
+                d.update({former_pred: new_pred})
+                blocks = [d[block] for block in blocks]
+                op.set_args([blocks, vals])
