@@ -29,8 +29,9 @@ def ssa(func, cfg):
     move_allocas(func, allocas)
     phis = insert_phis(func, cfg, allocas)
     compute_dataflow(func, cfg, allocas, phis)
-    prune_phis(func)
+    prune_phis(func, phis)
     simplify(func, cfg)
+    return phis
 
 def cfg(func, view=False, exceptions=True):
     """
@@ -166,21 +167,27 @@ def compute_dataflow(func, cfg, allocas, phis):
     for alloca in allocas:
         alloca.delete()
 
-def prune_phis(func):
+def prune_phis(func, phis):
     """Delete unnecessary phis (all incoming values equivalent)"""
+    def delete(op):
+        op.delete()
+        if op in phis:
+            # Pruning newly introduced phi, delete from phi map
+            del phis[op]
+
     for op in func.ops:
         if op.opcode == 'phi':
             blocks, args = op.args
             if not func.uses[op]:
-                op.delete()
+                delete(op)
             elif len(set(args)) == 1:
                 [arg] = set(args)
                 op.replace_uses(arg)
-                op.delete()
+                delete(op)
             elif len(args) == 2 and op in args:
                 [arg] = set(args) - set([op])
                 op.replace_uses(arg)
-                op.delete()
+                delete(op)
 
 # ______________________________________________________________________
 

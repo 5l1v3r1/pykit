@@ -85,6 +85,7 @@ def generate_copies(func, phis):
     """
     builder = Builder(func)
     vars = {}
+    loads = {}
 
     # First allocate all stack variables to correctly handle cycles
     builder.position_at_beginning(func.startblock)
@@ -101,8 +102,11 @@ def generate_copies(func, phis):
     # Update uses and remove phi
     for block in phis:
         for phi in phis[block]:
-            update_uses(func, phi, builder, vars)
+            block_loads = update_uses(func, phi, builder, vars)
+            loads.update(block_loads)
             phi.delete()
+
+    return dict(vars, **loads)
 
 # -- helpers -- #
 
@@ -139,11 +143,19 @@ def insert_copies(phis, block, builder, phi_args, vars):
 
 def update_uses(func, phi, builder, vars):
     """Update uses of phis to refer to stack variables"""
+    loads = {}
     for use in list(func.uses[phi]):
         assert not ops.is_leader(use.opcode), use
         builder.position_before(use)
-        replacement = builder.load(vars[phi])
+        if phi in loads:
+            replacement = loads[phi]
+        else:
+            replacement = builder.load(vars[phi])
+
         use.replace_args({phi: replacement})
+        loads[phi] = replacement
+
+    return loads
 
 #===------------------------------------------------------------------===
 # Driver
@@ -162,8 +174,9 @@ def find_phis(func):
 
 def reg2mem(func, env=None):
     cfg = cfa.cfg(func, exceptions=False) # ignore exc_setup
-    phis = find_phis(func)
-    split_critical_edges(func, cfg, phis)
-    generate_copies(func, phis)
+    split_critical_edges(func, cfg, find_phis(func))
+    valuemap = generate_copies(func, find_phis(func))
+    return valuemap
 
-run = reg2mem
+def run(func, env):
+    reg2mem(func, env)
