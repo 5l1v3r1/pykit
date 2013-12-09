@@ -7,7 +7,6 @@ Function inlining.
 from __future__ import print_function, division, absolute_import
 
 from pykit.error import CompileError
-from pykit.analysis import loop_detection
 from pykit.ir import Function, Builder, findallops, copy_function, verify
 from pykit.transform import ret as ret_normalization
 
@@ -108,23 +107,7 @@ def assert_inlinable(func, call, callee, uses):
     """
     Verify that a function call can be inlined.
 
-    We can inline generators if they are consumed in a single loop:
-
-        - iter(g) must be in a loop header
-        - next(g) must be in the loop body
-
     :return: None if inlineable, or an exception with a message
     """
     if not isinstance(callee, Function):
         return CompileError("Cannot inline external function: %s" % (callee,))
-
-    yields = findallops(callee, 'yield')
-    if yields:
-        for use in uses[call]:
-            if use.opcode not in ('iter', 'next'):
-                return CompileError(
-                    "Cannot inline generator with use %s" % (use,))
-
-        if len(uses[call]) != 2:
-            return CompileError("Can only")
-        loops = loop_detection.find_natural_loops(func)
