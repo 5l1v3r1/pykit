@@ -90,6 +90,10 @@ class Interp(object):
         """Increment program counter"""
         self.pc += 1
 
+    def decr_pc(self):
+        """Decrement program counter"""
+        self.pc -= 1
+
     @property
     def op(self):
         """Return the current operation"""
@@ -105,9 +109,32 @@ class Interp(object):
 
     pc = property(lambda self: self._pc, setpc, doc="Program Counter")
 
-    def blockswitch(self, oldblock, newblock):
+    def blockswitch(self, oldblock, newblock, valuemap):
         self.prevblock = oldblock
         self.exc_handlers = []
+
+        self.execute_phis(newblock, valuemap)
+
+    def execute_phis(self, block, valuemap):
+        """
+        Execute all phis in parallel, i.e. execute them before updating the
+        store.
+        """
+        new_values = {}
+        for op in block.leaders:
+            if op.opcode == 'phi':
+                new_values[op.result] = self.execute_phi(op)
+
+        valuemap.update(new_values)
+
+    def execute_phi(self, op):
+        for i, block in enumerate(op.args[0]):
+            if block == self.prevblock:
+                values = op.args[1]
+                return self.argloader.load_op(values[i])
+
+        raise RuntimeError("Previous block %r not a predecessor of %r!" %
+                                    (self.prevblock.name, op.block.name))
 
     noop = lambda *args: None
 
@@ -126,7 +153,7 @@ class Interp(object):
         return { 'value': Undef, 'type': self.op.type }
 
     def load(self, var):
-        assert var['value'] is not Undef, self.op
+        #assert var['value'] is not Undef, self.op
         return var['value']
 
     def store(self, value, var):
@@ -135,13 +162,8 @@ class Interp(object):
         var['value'] = value
 
     def phi(self):
-        for i, block in enumerate(self.op.args[0]):
-            if block == self.prevblock:
-                values = self.op.args[1]
-                return self.argloader.load_op(values[i])
-
-        raise RuntimeError("Previous block %r not a predecessor of %r!" %
-                                    (self.prevblock.name, self.op.block.name))
+        "See execute_phis"
+        return self.argloader.load_op(self.op)
 
     # __________________________________________________________________
     # Functions
@@ -358,7 +380,7 @@ def run(func, env=None, exc_model=None, _state=None, args=(),
 
         op = interp.op
         if op.block != curblock:
-            interp.blockswitch(curblock, op.block)
+            interp.blockswitch(curblock, op.block, valuemap)
             curblock = op.block
 
         # -------------------------------------------------
