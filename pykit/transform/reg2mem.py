@@ -36,6 +36,7 @@ References:
 """
 
 from __future__ import print_function, division, absolute_import
+import collections
 
 from pykit import types
 from pykit.ir import Builder, Op, ops
@@ -61,7 +62,7 @@ def split_critical_edges(func, cfg, phis):
             new_succs = {} # old_successor -> new_successor
             for succ in successors:
                 if phis[succ]:
-                    new_succ = func.new_block("split_critical")
+                    new_succ = func.new_block("split_critical", after=block)
                     new_succs[succ] = new_succ
                     b.position_at_end(new_succ)
                     b.jump(succ)
@@ -85,7 +86,7 @@ def generate_copies(func, phis):
     """
     builder = Builder(func)
     vars = {}
-    loads = {}
+    loads = collections.defaultdict(list)
 
     # First allocate all stack variables to correctly handle cycles
     builder.position_at_beginning(func.startblock)
@@ -96,21 +97,20 @@ def generate_copies(func, phis):
     # Now generate copies in predecessors
     for block in func.blocks:
         # First load all phi arguments
-        phi_args = construct_phi_args(phis, block, builder, vars)
+        phi_args = construct_phi_args(phis, block, builder, vars, loads)
         insert_copies(phis, block, builder, phi_args, vars)
 
     # Update uses and remove phi
     for block in phis:
         for phi in phis[block]:
-            block_loads = update_uses(func, phi, builder, vars)
-            loads.update(block_loads)
+            update_uses(func, phi, builder, vars, loads)
             phi.delete()
 
-    return dict(vars, **loads)
+    return vars, loads
 
 # -- helpers -- #
 
-def construct_phi_args(phis, block, builder, vars):
+def construct_phi_args(phis, block, builder, vars, loads):
     """Load phi arguments to phi instructions (SSA cycles)"""
     phi_args = {} # { phi : [arg] }
 
@@ -121,6 +121,7 @@ def construct_phi_args(phis, block, builder, vars):
             if isinstance(arg, Op) and arg.opcode == 'phi':
                 builder.position_before(pred.terminator)
                 arg = builder.load(vars[arg])
+                loads[vars[arg]].append(arg)
             result_args.append(arg)
 
         phi_args[phi] = result_args
@@ -141,21 +142,20 @@ def insert_copies(phis, block, builder, phi_args, vars):
         # Update args list
         phi.set_args([preds, result_args])
 
-def update_uses(func, phi, builder, vars):
+def update_uses(func, phi, builder, vars, loads):
     """Update uses of phis to refer to stack variables"""
-    loads = {}
+    local_loads = {}
     for use in list(func.uses[phi]):
         assert not ops.is_leader(use.opcode), use
         builder.position_before(use)
-        if phi in loads:
-            replacement = loads[phi]
+        if phi in local_loads:
+            replacement = local_loads[phi]
         else:
             replacement = builder.load(vars[phi])
 
         use.replace_args({phi: replacement})
-        loads[phi] = replacement
-
-    return loads
+        local_loads[phi] = replacement
+        loads[phi].append(replacement)
 
 #===------------------------------------------------------------------===
 # Driver
@@ -175,8 +175,8 @@ def find_phis(func):
 def reg2mem(func, env=None):
     cfg = cfa.cfg(func, exceptions=False) # ignore exc_setup
     split_critical_edges(func, cfg, find_phis(func))
-    valuemap = generate_copies(func, find_phis(func))
-    return valuemap
+    vars, loads = generate_copies(func, find_phis(func))
+    return vars, loads
 
 def run(func, env):
     reg2mem(func, env)
