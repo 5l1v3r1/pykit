@@ -9,7 +9,7 @@ from pykit.parsing import from_c
 from pykit.transform import reg2mem
 from pykit.ir import opcodes, findallops, verify, interp
 
-class TestInlining(unittest.TestCase):
+class TestReg2mem(unittest.TestCase):
 
     def test_swap(self):
         simple = textwrap.dedent("""
@@ -38,6 +38,7 @@ class TestInlining(unittest.TestCase):
 
         reg2mem.reg2mem(func)
         verify(func)
+
         stack_result1 = interp.run(func, args=[1])
         stack_result2 = interp.run(func, args=[2])
 

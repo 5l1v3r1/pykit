@@ -86,76 +86,39 @@ def generate_copies(func, phis):
     """
     builder = Builder(func)
     vars = {}
-    loads = collections.defaultdict(list)
+    loads = {}
 
-    # First allocate all stack variables to correctly handle cycles
+    # Allocate a stack variable for each phi
     builder.position_at_beginning(func.startblock)
     for block in phis:
         for phi in phis[block]:
             vars[phi] = builder.alloca(types.Pointer(phi.type))
 
-    # Now generate copies in predecessors
-    for block in func.blocks:
-        # First load all phi arguments
-        phi_args = construct_phi_args(phis, block, builder, vars, loads)
-        insert_copies(phis, block, builder, phi_args, vars)
+    # Generate loads in blocks containing the phis
+    for block in phis:
+        leaders = list(block.leaders)
+        last_leader = leaders[-1] if leaders else block.head
+        builder.position_after(last_leader)
+        for phi in phis[block]:
+            loads[phi] = builder.load(vars[phi])
 
-    # Update uses and remove phi
+    # Generate copies (store to stack variables)
     for block in phis:
         for phi in phis[block]:
-            update_uses(func, phi, builder, vars, loads)
+            preds, args = phi.args
+            var = vars[phi]
+            phi_args = [loads.get(arg, arg) for arg in args]
+            for pred, arg in zip(preds, phi_args):
+                builder.position_before(pred.terminator)
+                builder.store(arg, var)
+
+    # Replace phis
+    for block in phis:
+        for phi in phis[block]:
+            phi.replace_uses(loads[phi])
             phi.delete()
 
     return vars, loads
-
-# -- helpers -- #
-
-def construct_phi_args(phis, block, builder, vars, loads):
-    """Load phi arguments to phi instructions (SSA cycles)"""
-    phi_args = {} # { phi : [arg] }
-
-    for phi in phis[block]:
-        preds, args = phi.args
-        result_args = []
-        for pred, arg in zip(preds, args):
-            if isinstance(arg, Op) and arg.opcode == 'phi':
-                builder.position_before(pred.terminator)
-                arg = builder.load(vars[arg])
-                loads[vars[arg]].append(arg)
-            result_args.append(arg)
-
-        phi_args[phi] = result_args
-
-    return phi_args
-
-def insert_copies(phis, block, builder, phi_args, vars):
-    """Insert store statements to stack variables"""
-    for phi in phis[block]:
-        # Now generate copies
-        preds, args = phi.args
-        var = vars[phi]
-        result_args = phi_args[phi]
-        for pred, arg in zip(preds, result_args):
-            builder.position_before(pred.terminator)
-            builder.store(arg, var)
-
-        # Update args list
-        phi.set_args([preds, result_args])
-
-def update_uses(func, phi, builder, vars, loads):
-    """Update uses of phis to refer to stack variables"""
-    local_loads = {}
-    for use in list(func.uses[phi]):
-        assert not ops.is_leader(use.opcode), use
-        builder.position_before(use)
-        if phi in local_loads:
-            replacement = local_loads[phi]
-        else:
-            replacement = builder.load(vars[phi])
-
-        use.replace_args({phi: replacement})
-        local_loads[phi] = replacement
-        loads[phi].append(replacement)
 
 #===------------------------------------------------------------------===
 # Driver
