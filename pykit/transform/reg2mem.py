@@ -62,7 +62,8 @@ def split_critical_edges(func, cfg, phis):
             new_succs = {} # old_successor -> new_successor
             for succ in successors:
                 if phis[succ]:
-                    new_succ = func.new_block("split_critical", after=block)
+                    label = func.temp("split_critical")
+                    new_succ = func.new_block(label, after=block)
                     new_succs[succ] = new_succ
                     b.position_at_end(new_succ)
                     b.jump(succ)

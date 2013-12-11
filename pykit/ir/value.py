@@ -495,7 +495,7 @@ class Operation(Local):
         _del_args(self.function.uses, self, self.args)
         del self.function.uses[self]
         self.unlink()
-        self.result = None
+        self.result = "deleted(%s)" % (self.result,)
 
     def unlink(self):
         """Unlink from the basic block"""
