@@ -127,8 +127,8 @@ class Function(Value):
 
     def new_block(self, label, ops=None, after=None):
         """Create a new block with name `label` and append it"""
-        assert label not in self.blockmap, label
-        label = self.temp(label)
+        if label in self.blockmap:
+            label = self.temp(label)
         return self.add_block(Block(label, self, ops), after)
 
     def add_arg(self, argname, argtype):

@@ -224,6 +224,16 @@ class Translator(object):
         else:
             lfunc = function # function pointer
 
+        for func_arg, arg, param in zip(function.args, args, lfunc.args):
+            if arg.type != param.type:
+                raise TypeError(
+                    "Function %s called with type %s, "
+                    "expected %s for argument %r" % (function.name,
+                                                     arg.type,
+                                                     param.type,
+                                                     func_arg.result))
+
+
         call = self.builder.call(lfunc, args)
         return call
 
