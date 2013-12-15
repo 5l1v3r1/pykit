@@ -169,8 +169,17 @@ def compute_dataflow(func, cfg, allocas, phis):
 
 def prune_phis(func, phis):
     """Delete unnecessary phis (all incoming values equivalent)"""
+    # TODO: Exploit sparsity
+    changed = True
+    while changed:
+        changed = _prune_phis(func, phis)
+
+def _prune_phis(func, phis):
+    changed = []
+
     def delete(op):
         op.delete()
+        changed.append(op)
         if op in phis:
             # Pruning newly introduced phi, delete from phi map
             del phis[op]
@@ -188,6 +197,8 @@ def prune_phis(func, phis):
                 [arg] = set(args) - set([op])
                 op.replace_uses(arg)
                 delete(op)
+
+    return bool(changed)
 
 # ______________________________________________________________________
 
