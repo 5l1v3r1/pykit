@@ -85,6 +85,14 @@ class OpBuilder(_generated.GeneratedBuilder):
         assert ptr.type.is_pointer
         return super(OpBuilder, self).ptr_isnull(types.Bool, ptr, **kwds)
 
+    def unpackvector(self, vec, **kwds):
+        assert vec.type.is_vector
+        return super(OpBuilder, self).bitcast(types.Array(vec.type.base, vec.type.count), vec, **kwds)
+
+    def packvector(self, arr, **kwds):
+        assert arr.type.is_array
+        return super(OpBuilder, self).bitcast(types.Vector(arr.type.base, arr.type.count), arr, **kwds)
+
     invert               = unary('invert')
     uadd                 = unary('uadd')
     not_                 = unary('not_')

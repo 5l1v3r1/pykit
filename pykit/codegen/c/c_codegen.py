@@ -68,6 +68,11 @@ class Translator(object):
             return arg
         return self.emit_expr(op, "{0} {1}", c_type(op.type), arg)
 
+    def op_bitcast(self, op, val):
+        if op.args[0].type == op.type:
+            return val
+        return self.emit_expr(op, "*((*{0})&{1})", c_type(op.type), val)
+
     # __________________________________________________________________
 
     def op_call(self, op, function, args):

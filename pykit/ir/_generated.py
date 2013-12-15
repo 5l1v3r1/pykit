@@ -87,6 +87,16 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
+    def bitcast(self, type, value0, **kwds):
+        assert isinstance(value0, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('bitcast', type, [value0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
     def phi(self, type, lst0, lst1, **kwds):
         assert isinstance(lst0, list)
         assert isinstance(lst1, list)
@@ -175,6 +185,17 @@ class GeneratedBuilder(object):
         assert type is not None
         register = kwds.pop('result', None)
         op = Op('call_math', type, [obj0, lst0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def add(self, type, value0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('add', type, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -340,12 +361,44 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
-    def add(self, type, value0, value1, **kwds):
+    def packvector(self, type, value0, **kwds):
+        assert isinstance(value0, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('packvector', type, [value0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def unpackvector(self, type, value0, **kwds):
+        assert isinstance(value0, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('unpackvector', type, [value0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def extractvalue(self, type, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
         assert type is not None
         register = kwds.pop('result', None)
-        op = Op('add', type, [value0, value1], register, metadata=kwds)
+        op = Op('extractvalue', type, [value0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def insertvalue(self, type, value0, value1, value2, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert isinstance(value2, Value)
+        assert type is not None
+        register = kwds.pop('result', None)
+        op = Op('insertvalue', type, [value0, value1, value2], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)

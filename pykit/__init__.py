@@ -3,6 +3,7 @@ from __future__ import print_function, division, absolute_import
 
 from os.path import dirname, abspath
 import unittest
+from . import types
 
 from pykit.configuration import config
 from pykit.parsing import from_c

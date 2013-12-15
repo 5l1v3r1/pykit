@@ -87,6 +87,7 @@ store              = op('store/vv')           # expr value, alloc var
 # Conversion
 
 convert            = op('convert/v')          # expr arg
+bitcast            = op('bitcast/v')          # expr value
 
 # ______________________________________________________________________
 # Control flow
@@ -126,11 +127,12 @@ ptr_isnull         = op('ptr_isnull/v')       # expr pointer
 # ______________________________________________________________________
 # Attributes
 
+
 getfield           = op('getfield/vo')        # (expr value, str attr)
 setfield           = op('setfield/vov')       # (expr value, str attr, expr value)
 
 # ______________________________________________________________________
-# Insert field
+# Fields
 
 extractfield       = op('extractfield/vo')
 insertfield        = op('insertfield/vov')
@@ -141,9 +143,11 @@ insertfield        = op('insertfield/vov')
 extractelement     = op('extractelement/vv')  # (expr vector, int index)
 insertelement      = op('insertelement/vvv')  # (expr vector, expr value, int index)
 shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
+packvector         = op('packvector/v')       # (expr vector)
+unpackvector       = op('unpackvector/v')     # (expr vector)
 
 # ______________________________________________________________________
-# Arrays
+# Arrays/Structs
 
 extractvalue       = op('extractvalue/vv')  # (expr array, int index)
 insertvalue        = op('insertvalue/vvv')  # (expr array, expr value, int index)

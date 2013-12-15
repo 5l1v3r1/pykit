@@ -238,6 +238,11 @@ class Translator(object):
         return LLVMCaster.build_cast(self.builder, arg,
                                      self.llvm_type(t), **kwds)
 
+    def op_bitcast(self, op, val):
+        if op.args[0].type == op.type:
+            return val
+        return self.builder.bitcast(val, self.llvm_type(op.type), op.result)
+
     # __________________________________________________________________
 
     def op_call(self, op, function, args):
