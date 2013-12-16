@@ -79,7 +79,7 @@ constant           = op('constant/o')         # object pyval
 # ______________________________________________________________________
 # Variables
 
-alloca             = op('alloca/')
+alloca             = op('alloca/v')           # expr numItems [length of allocation implied by return type]
 load               = op('load/v')             # alloc var
 store              = op('store/vv')           # expr value, alloc var
 
@@ -127,7 +127,6 @@ ptr_isnull         = op('ptr_isnull/v')       # expr pointer
 # ______________________________________________________________________
 # Attributes
 
-
 getfield           = op('getfield/vo')        # (expr value, str attr)
 setfield           = op('setfield/vov')       # (expr value, str attr, expr value)
 
@@ -138,6 +137,12 @@ extractfield       = op('extractfield/vo')
 insertfield        = op('insertfield/vov')
 
 # ______________________________________________________________________
+# Aggregates (structs/arrays)
+
+extractvalue       = op('extractvalue/vv')    # (agg value, idx value)
+insertvalue        = op('insertvalue/vvv')    # (val value, elt value, idx value)
+
+# ______________________________________________________________________
 # Vectors
 
 extractelement     = op('extractelement/vv')  # (expr vector, int index)
@@ -145,12 +150,6 @@ insertelement      = op('insertelement/vvv')  # (expr vector, expr value, int in
 shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
 packvector         = op('packvector/v')       # (expr vector)
 unpackvector       = op('unpackvector/v')     # (expr vector)
-
-# ______________________________________________________________________
-# Arrays/Structs
-
-extractvalue       = op('extractvalue/vv')  # (expr array, int index)
-insertvalue        = op('insertvalue/vvv')  # (expr array, expr value, int index)
 
 # ______________________________________________________________________
 # Basic operators

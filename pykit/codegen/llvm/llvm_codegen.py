@@ -314,6 +314,14 @@ class Translator(object):
 
     # __________________________________________________________________
 
+    def op_extractvalue(self, op, val, idx):
+        return self.builder.extract_value(val, idx, op.result)
+
+    def op_insertvalue(self, op, val, elt, idx):
+        return self.builder.insert_value(val, elt, idx, op.result)
+
+    # __________________________________________________________________
+
     def op_getindex(self, op, array, indices):
         return self.builder.gep(array, indices, op.result)
 
@@ -323,14 +331,10 @@ class Translator(object):
 
     # __________________________________________________________________
 
-    def op_getindex(self, op, array, indices):
-        return self.builder.gep(array, indices, op.result)
-
-    # __________________________________________________________________
-
-    def op_alloca(self, op):
-        llvm_pointer_type = self.llvm_type(op.type)
-        return self.builder.alloca(llvm_pointer_type.pointee, op.result)
+    def op_alloca(self, op, ty, numElements=None):
+        if numElements:
+            return self.builder.alloca_array(self.llvm_type(ty), numElements, op.result)
+        return self.builder.alloca(self.llvm_type(ty), op.result)
 
     def op_load(self, op, stackvar):
         return self.builder.load(stackvar, op.result)

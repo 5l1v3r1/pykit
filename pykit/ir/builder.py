@@ -43,10 +43,10 @@ class OpBuilder(_generated.GeneratedBuilder):
     Build Operations, improving upon the generated methods.
     """
 
-    def alloca(self, type,  **kwds):
+    def alloca(self, type, numElements=None, **kwds):
         assert type is not None
-        assert type.is_pointer
-        return super(OpBuilder, self).alloca(type, **kwds)
+        assert not numElements or numElements.is_integral
+        return super(OpBuilder, self).alloca(types.Pointer(ty), ty, numElements, **kwds)
 
     def load(self, value0, **kwds):
         # TODO: Write a builder that produces untyped code !
@@ -87,10 +87,12 @@ class OpBuilder(_generated.GeneratedBuilder):
 
     def unpackvector(self, vec, **kwds):
         assert vec.type.is_vector
+        assert vec.type.base.is_integral or vec.type.base.is_real
         return super(OpBuilder, self).bitcast(types.Array(vec.type.base, vec.type.count), vec, **kwds)
 
     def packvector(self, arr, **kwds):
         assert arr.type.is_array
+        assert arr.type.base.is_integral or arr.type.base.is_real
         return super(OpBuilder, self).bitcast(types.Vector(arr.type.base, arr.type.count), arr, **kwds)
 
     invert               = unary('invert')
