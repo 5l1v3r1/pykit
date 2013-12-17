@@ -7,7 +7,9 @@ import unittest
 from pykit.configuration import config
 from pykit.parsing import from_c
 
-__version__ = '0.1'
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 # ______________________________________________________________________
 # pykit.test()
