@@ -127,8 +127,7 @@ class Function(Value):
 
     def new_block(self, label, ops=None, after=None):
         """Create a new block with name `label` and append it"""
-        if label in self.blockmap:
-            label = self.temp(label)
+        label = self.temp(label)
         return self.add_block(Block(label, self, ops), after)
 
     def add_arg(self, argname, argtype):
@@ -140,6 +139,9 @@ class Function(Value):
 
     def add_block(self, block, after=None):
         """Add a Block at the end, or after `after`"""
+        assert block.name not in self.blockmap
+        self.temp(block.name) # Make sure this name is taken
+
         if block.parent is None:
             block.parent = self
         else:

@@ -13,7 +13,7 @@ def run(func, env=None, return_block=None):
     to a return variable.
     """
     b = Builder(func)
-    return_block = return_block or func.new_block(func.temp("pykit.return"))
+    return_block = return_block or func.new_block("pykit.return")
 
     # Allocate return variable
     if not func.type.restype.is_void:

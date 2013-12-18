@@ -61,9 +61,8 @@ def copy_function(func, temper=None, module=None):
 
     ### Construct new Blocks
     for block in func.blocks:
-        new_block = Block(temper(block.name), f)
+        new_block = f.new_block(block.name)
         valuemap[block] = new_block
-        f.add_block(new_block)
 
     ### Construct new Operations
     for block in func.blocks:

@@ -111,9 +111,10 @@ call_once = cached
 def make_temper():
     """Return a function that returns temporary names"""
     temps = collections.defaultdict(int)
+    seen = set()
 
     def temper(input=""):
-        name, dot, tail = input.partition('.')
+        name, dot, tail = input.rpartition('.')
         if tail.isdigit():
             varname = name
         else:
@@ -122,9 +123,14 @@ def make_temper():
         count = temps[varname]
         temps[varname] += 1
         if varname and count == 0:
-            return varname
+            result = varname
+        else:
+            result = "%s.%d" % (varname, count)
 
-        return "%s.%d" % (varname, count)
+        assert result not in seen
+        seen.add(result)
+
+        return result
 
     return temper
 
