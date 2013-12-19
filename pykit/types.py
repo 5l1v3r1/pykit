@@ -38,9 +38,10 @@ def typetuple(name, elems):
 
 VoidT      = typetuple('Void',     [])
 Boolean    = typetuple('Bool',     [])
-Integral   = typetuple('Int',      ['bits', 'unsigned'])
+Integral   = typetuple('Integral', ['bits', 'unsigned'])
 Real       = typetuple('Real',     ['bits'])
 Array      = typetuple('Array',    ['base', 'count'])
+Vector     = typetuple('Vector',   ['base', 'count'])
 Struct     = typetuple('Struct',   ['names', 'types'])
 Pointer    = typetuple('Pointer',  ['base'])
 Tuple      = typetuple('Tuple',    ['bases'])
@@ -50,7 +51,6 @@ Function   = typetuple('Function', ['restype', 'argtypes', 'varargs'])
 ExceptionT = typetuple('Exception',[])
 BytesT     = typetuple('Bytes',    [])
 OpaqueT    = typetuple('Opaque',   []) # Some type we make zero assumptions about
-Vector     = typetuple('Vector',   ['base', 'count'])
 
 # These are user-defined types
 # Complex    = typetuple('Complex',  ['base'])

@@ -1,5 +1,5 @@
-from pykit.types import (Boolean, Integral, Float32, Float64, Struct, Pointer,
-                         Function, VoidT, resolve_typedef)
+from pykit.types import (Boolean, Integral, Float32, Float64, Array, Struct, Pointer,
+                         Function, Vector, VoidT, resolve_typedef)
 from llvm.core import Type, TYPE_FUNCTION
 
 from llvmmath import llvm_support
@@ -14,6 +14,10 @@ def llvm_type(type):
         return Type.float()
     elif type == Float64:
         return Type.double()
+    elif ty == Array:
+        return Type.array(llvm_type(type.base), type.count)
+    elif ty == Vector:
+        return Type.vector(llvm_type(type.base), type.count)
     elif ty == Struct:
         fields = [llvm_type(ftype) for ftype in type.types]
         return Type.struct(fields)

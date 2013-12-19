@@ -47,21 +47,21 @@ class GeneratedBuilder(object):
     Pow                  = _const(ops.Pow)
     Round                = _const(ops.Round)
 
-    def alloca(self, type, value0, **kwds):
+    def alloca(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('alloca', type, [value0], register, metadata=kwds)
+        op = Op('alloca', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def load(self, type, value0, **kwds):
+    def load(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('load', type, [value0], register, metadata=kwds)
+        op = Op('load', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -70,40 +70,40 @@ class GeneratedBuilder(object):
     def store(self, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('store', types.Void, [value0, value1], register, metadata=kwds)
+        op = Op('store', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def convert(self, type, value0, **kwds):
+    def convert(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('convert', type, [value0], register, metadata=kwds)
+        op = Op('convert', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def bitcast(self, type, value0, **kwds):
+    def bitcast(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('bitcast', type, [value0], register, metadata=kwds)
+        op = Op('bitcast', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def phi(self, type, lst0, lst1, **kwds):
+    def phi(self, returnType, lst0, lst1, **kwds):
         assert isinstance(lst0, list)
         assert isinstance(lst1, list)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('phi', type, [lst0, lst1], register, metadata=kwds)
+        op = Op('phi', returnType, [lst0, lst1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -111,9 +111,9 @@ class GeneratedBuilder(object):
 
     def exc_setup(self, lst0, **kwds):
         assert isinstance(lst0, list)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('exc_setup', types.Void, [lst0], register, metadata=kwds)
+        op = Op('exc_setup', returnType, [lst0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -121,9 +121,9 @@ class GeneratedBuilder(object):
 
     def exc_catch(self, lst0, **kwds):
         assert isinstance(lst0, list)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('exc_catch', types.Void, [lst0], register, metadata=kwds)
+        op = Op('exc_catch', returnType, [lst0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -131,9 +131,9 @@ class GeneratedBuilder(object):
 
     def jump(self, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('jump', types.Void, [value0], register, metadata=kwds)
+        op = Op('jump', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -143,9 +143,9 @@ class GeneratedBuilder(object):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
         assert isinstance(value2, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('cbranch', types.Void, [value0, value1, value2], register, metadata=kwds)
+        op = Op('cbranch', returnType, [value0, value1, value2], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -153,91 +153,91 @@ class GeneratedBuilder(object):
 
     def exc_throw(self, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('exc_throw', types.Void, [value0], register, metadata=kwds)
+        op = Op('exc_throw', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
     def ret(self, obj0, **kwds):
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('ret', types.Void, [obj0], register, metadata=kwds)
+        op = Op('ret', returnType, [obj0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def call(self, type, value0, lst0, **kwds):
+    def call(self, returnType, value0, lst0, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(lst0, list)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('call', type, [value0, lst0], register, metadata=kwds)
+        op = Op('call', returnType, [value0, lst0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def call_math(self, type, obj0, lst0, **kwds):
+    def call_math(self, returnType, obj0, lst0, **kwds):
         assert isinstance(lst0, list)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('call_math', type, [obj0, lst0], register, metadata=kwds)
+        op = Op('call_math', returnType, [obj0, lst0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def add(self, type, value0, value1, **kwds):
+    def add(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('add', type, [value0, value1], register, metadata=kwds)
+        op = Op('add', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def addressof(self, type, value0, **kwds):
+    def addressof(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('addressof', type, [value0], register, metadata=kwds)
+        op = Op('addressof', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def sizeof(self, type, value0, **kwds):
+    def sizeof(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('sizeof', type, [value0], register, metadata=kwds)
+        op = Op('sizeof', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def ptradd(self, type, value0, value1, **kwds):
+    def ptradd(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('ptradd', type, [value0, value1], register, metadata=kwds)
+        op = Op('ptradd', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def ptrload(self, type, value0, **kwds):
+    def ptrload(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('ptrload', type, [value0], register, metadata=kwds)
+        op = Op('ptrload', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -246,50 +246,50 @@ class GeneratedBuilder(object):
     def ptrstore(self, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('ptrstore', types.Void, [value0, value1], register, metadata=kwds)
+        op = Op('ptrstore', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def ptrcast(self, type, value0, **kwds):
+    def ptrcast(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('ptrcast', type, [value0], register, metadata=kwds)
+        op = Op('ptrcast', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def ptr_isnull(self, type, value0, **kwds):
+    def ptr_isnull(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('ptr_isnull', type, [value0], register, metadata=kwds)
+        op = Op('ptr_isnull', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def ge(self, type, value0, value1, **kwds):
+    def ge(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('ge', type, [value0, value1], register, metadata=kwds)
+        op = Op('ge', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def getfield(self, type, value0, obj0, **kwds):
+    def getfield(self, returnType, value0, obj0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('getfield', type, [value0, obj0], register, metadata=kwds)
+        op = Op('getfield', returnType, [value0, obj0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -298,313 +298,313 @@ class GeneratedBuilder(object):
     def setfield(self, value0, obj0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('setfield', types.Void, [value0, obj0, value1], register, metadata=kwds)
+        op = Op('setfield', returnType, [value0, obj0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def extractfield(self, type, value0, obj0, **kwds):
+    def extractfield(self, returnType, value0, obj0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('extractfield', type, [value0, obj0], register, metadata=kwds)
+        op = Op('extractfield', returnType, [value0, obj0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def insertfield(self, type, value0, obj0, value1, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('insertfield', type, [value0, obj0, value1], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def extractvalue(self, type, value0, value1, **kwds):
+    def insertfield(self, returnType, value0, obj0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('extractvalue', type, [value0, value1], register, metadata=kwds)
+        op = Op('insertfield', returnType, [value0, obj0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def insertvalue(self, type, value0, value1, value2, **kwds):
+    def extractvalue(self, returnType, value0, const0, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(const0, Const)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('extractvalue', returnType, [value0, const0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def insertvalue(self, returnType, value0, value1, const0, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert isinstance(value2, Value)
-        assert type is not None
+        assert isinstance(const0, Const)
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('insertvalue', type, [value0, value1, value2], register, metadata=kwds)
+        op = Op('insertvalue', returnType, [value0, value1, const0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def extractelement(self, type, value0, value1, **kwds):
+    def extractelement(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('extractelement', type, [value0, value1], register, metadata=kwds)
+        op = Op('extractelement', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def insertelement(self, type, value0, value1, value2, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert isinstance(value2, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('insertelement', type, [value0, value1, value2], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def shufflevector(self, type, value0, value1, value2, **kwds):
+    def insertelement(self, returnType, value0, value1, value2, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
         assert isinstance(value2, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('shufflevector', type, [value0, value1, value2], register, metadata=kwds)
+        op = Op('insertelement', returnType, [value0, value1, value2], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def packvector(self, type, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('packvector', type, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def unpackvector(self, type, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('unpackvector', type, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def sub(self, type, value0, value1, **kwds):
+    def shufflevector(self, returnType, value0, value1, value2, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert isinstance(value2, Value)
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('sub', type, [value0, value1], register, metadata=kwds)
+        op = Op('shufflevector', returnType, [value0, value1, value2], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def mul(self, type, value0, value1, **kwds):
+    def packvector(self, returnType, value0, **kwds):
+        assert isinstance(value0, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('packvector', returnType, [value0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def unpackvector(self, returnType, value0, **kwds):
+        assert isinstance(value0, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('unpackvector', returnType, [value0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def sub(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('mul', type, [value0, value1], register, metadata=kwds)
+        op = Op('sub', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def div(self, type, value0, value1, **kwds):
+    def mul(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('div', type, [value0, value1], register, metadata=kwds)
+        op = Op('mul', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def mod(self, type, value0, value1, **kwds):
+    def div(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('mod', type, [value0, value1], register, metadata=kwds)
+        op = Op('div', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def lshift(self, type, value0, value1, **kwds):
+    def mod(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('lshift', type, [value0, value1], register, metadata=kwds)
+        op = Op('mod', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def rshift(self, type, value0, value1, **kwds):
+    def lshift(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('rshift', type, [value0, value1], register, metadata=kwds)
+        op = Op('lshift', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def bitand(self, type, value0, value1, **kwds):
+    def rshift(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('bitand', type, [value0, value1], register, metadata=kwds)
+        op = Op('rshift', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def bitor(self, type, value0, value1, **kwds):
+    def bitand(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('bitor', type, [value0, value1], register, metadata=kwds)
+        op = Op('bitand', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def bitxor(self, type, value0, value1, **kwds):
+    def bitor(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('bitxor', type, [value0, value1], register, metadata=kwds)
+        op = Op('bitor', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def invert(self, type, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('invert', type, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def not_(self, type, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('not_', type, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def uadd(self, type, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('uadd', type, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def usub(self, type, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert type is not None
-        register = kwds.pop('result', None)
-        op = Op('usub', type, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def eq(self, type, value0, value1, **kwds):
+    def bitxor(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('eq', type, [value0, value1], register, metadata=kwds)
+        op = Op('bitxor', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def ne(self, type, value0, value1, **kwds):
+    def invert(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('ne', type, [value0, value1], register, metadata=kwds)
+        op = Op('invert', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def lt(self, type, value0, value1, **kwds):
+    def not_(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('lt', type, [value0, value1], register, metadata=kwds)
+        op = Op('not_', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def le(self, type, value0, value1, **kwds):
+    def uadd(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('le', type, [value0, value1], register, metadata=kwds)
+        op = Op('uadd', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def gt(self, type, value0, value1, **kwds):
+    def usub(self, returnType, value0, **kwds):
         assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('gt', type, [value0, value1], register, metadata=kwds)
+        op = Op('usub', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def is_(self, type, value0, value1, **kwds):
+    def eq(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('is_', type, [value0, value1], register, metadata=kwds)
+        op = Op('eq', returnType, [value0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def ne(self, returnType, value0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('ne', returnType, [value0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def lt(self, returnType, value0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('lt', returnType, [value0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def le(self, returnType, value0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('le', returnType, [value0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def gt(self, returnType, value0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('gt', returnType, [value0, value1], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def is_(self, returnType, value0, value1, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('is_', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -613,20 +613,20 @@ class GeneratedBuilder(object):
     def check_error(self, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('check_error', types.Void, [value0, value1], register, metadata=kwds)
+        op = Op('check_error', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def new_exc(self, type, value0, value1, **kwds):
+    def new_exc(self, returnType, value0, value1, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert type is not None
+        assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('new_exc', type, [value0, value1], register, metadata=kwds)
+        op = Op('new_exc', returnType, [value0, value1], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -634,9 +634,9 @@ class GeneratedBuilder(object):
 
     def print(self, value0, **kwds):
         assert isinstance(value0, Value)
-        assert type is not None
+        returnType = types.Void
         register = kwds.pop('result', None)
-        op = Op('print', types.Void, [value0], register, metadata=kwds)
+        op = Op('print', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)

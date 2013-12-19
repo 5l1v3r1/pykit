@@ -139,8 +139,8 @@ insertfield        = op('insertfield/vov')
 # ______________________________________________________________________
 # Aggregates (structs/arrays)
 
-extractvalue       = op('extractvalue/vv')    # (agg value, idx value)
-insertvalue        = op('insertvalue/vvv')    # (val value, elt value, idx value)
+extractvalue       = op('extractvalue/vc')    # (agg value, idx int)
+insertvalue        = op('insertvalue/vvc')    # (val value, elt value, idx int)
 
 # ______________________________________________________________________
 # Vectors

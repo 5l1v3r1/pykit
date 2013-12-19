@@ -206,7 +206,7 @@ class Translator(object):
     def op_binary(self, op, left, right):
         t = op.type.base if op.type.is_vector else op.type
         binop = defs.binary_opcodes[op.opcode]
-        if t.is_int:
+        if t.is_integral:
             genop = binop_int[binop][t.unsigned]
         else:
             genop = binop_float[binop]
@@ -315,10 +315,12 @@ class Translator(object):
     # __________________________________________________________________
 
     def op_extractvalue(self, op, val, idx):
-        return self.builder.extract_value(val, idx, op.result)
+        assert isinstance(idx, lc.ConstantInt)
+        return self.builder.extract_value(val, idx.s_ext_value, op.result)
 
     def op_insertvalue(self, op, val, elt, idx):
-        return self.builder.insert_value(val, elt, idx, op.result)
+        assert isinstance(idx, lc.ConstantInt)
+        return self.builder.insert_value(val, elt, idx.s_ext_value, op.result)
 
     # __________________________________________________________________
 

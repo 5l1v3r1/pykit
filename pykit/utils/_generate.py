@@ -14,15 +14,15 @@ def getorder():
     pos = defaultdict(int) # { 'opname': index }
     fn, ext = splitext(ops.__file__)
     lines = list(open(fn + '.py'))
-    for name, op in vars(ops).iteritems():
-        if isinstance(op, basestring) and name not in ('__file__', '__name__',
+    for name, op in vars(ops).items():
+        if isinstance(op, str) and name not in ('__file__', '__name__',
                                                        'constant'):
             for i, line in enumerate(lines):
                 if line.startswith(op):
                     pos[op] = i
                     break
 
-    order = sorted((lineno, op) for op, lineno in pos.iteritems())
+    order = sorted((lineno, op) for op, lineno in pos.items())
     return order
 
 order = getorder()
@@ -62,10 +62,7 @@ def gen_builder_methods():
             stmts = []
 
             if not ops.is_void(op):
-                params.append("type")
-                type = "type"
-            else:
-                type = "types.Void"
+                params.append("returnType")
 
             for s in ops.op_syntax[op]:
                 if s == ops.Star:
@@ -91,13 +88,13 @@ def gen_builder_methods():
 
             params = ", ".join(params) + "," if params else ""
             args = ", ".join(args)
-            if type:
-                stmts.append('assert type is not None')
+            if not ops.is_void(op):
+                stmts.append('assert returnType is not None')
             else:
-                stmts.append('type = types.Void')
+                stmts.append('returnType = types.Void')
 
             d = {
-                'op': op, 'params': params, 'args': args, 'type': type,
+                'op': op, 'params': params, 'args': args,
                 'stmts': '\n        '.join(stmts),
             }
 
@@ -105,7 +102,7 @@ def gen_builder_methods():
     def %(op)s(self, %(params)s **kwds):
         %(stmts)s
         register = kwds.pop('result', None)
-        op = Op('%(op)s', %(type)s, [%(args)s], register, metadata=kwds)
+        op = Op('%(op)s', returnType, [%(args)s], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)

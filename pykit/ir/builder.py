@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 from pykit import error
 from pykit import types
-from pykit.ir import Value, Const, Undef, ops, findop, FuncArg, blocks
+from pykit.ir import Op, Value, Const, Undef, ops, findop, FuncArg, blocks
 from . import _generated
 
 #===------------------------------------------------------------------===
@@ -45,8 +45,14 @@ class OpBuilder(_generated.GeneratedBuilder):
 
     def alloca(self, type, numElements=None, **kwds):
         assert type is not None
-        assert not numElements or numElements.is_integral
-        return super(OpBuilder, self).alloca(types.Pointer(ty), ty, numElements, **kwds)
+        assert numElements is None or numElements.is_integral
+        register = kwds.pop('result', None)
+        op = Op('alloca', types.Pointer(type), [type, numElements], register, metadata=kwds)
+#TODO: how can we verify this operation?
+#        if config.op_verify:
+#            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
 
     def load(self, value0, **kwds):
         # TODO: Write a builder that produces untyped code !
@@ -94,6 +100,17 @@ class OpBuilder(_generated.GeneratedBuilder):
         assert arr.type.is_array
         assert arr.type.base.is_integral or arr.type.base.is_real
         return super(OpBuilder, self).bitcast(types.Vector(arr.type.base, arr.type.count), arr, **kwds)
+
+    def insertvalue(self, agg, elt, idx, **kwds):
+        assert agg.type.is_array or agg.type.is_struct
+        assert elt.type == agg.type.base
+        #assert idx.type.is_integral # llvmpy expects a python it, not a int constant
+        return super(OpBuilder, self).insertvalue(agg.type, agg, elt, idx, **kwds)
+
+    def extractvalue(self, agg, idx, **kwds):
+        assert agg.type.is_array or agg.type.is_struct
+        #assert idx.type.is_integral
+        return super(OpBuilder, self).extractvalue(agg.type.base, agg, idx, **kwds)
 
     invert               = unary('invert')
     uadd                 = unary('uadd')
