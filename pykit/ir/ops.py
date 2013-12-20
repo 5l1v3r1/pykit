@@ -79,7 +79,7 @@ constant           = op('constant/o')         # object pyval
 # ______________________________________________________________________
 # Variables
 
-alloca             = op('alloca/v')           # expr numItems [length of allocation implied by return type]
+alloca             = op('alloca/o')           # obj numItems [length of allocation implied by return type]
 load               = op('load/v')             # alloc var
 store              = op('store/vv')           # expr value, alloc var
 
@@ -139,8 +139,9 @@ insertfield        = op('insertfield/vov')
 # ______________________________________________________________________
 # Aggregates (structs/arrays)
 
-extractvalue       = op('extractvalue/vc')    # (agg value, idx int)
-insertvalue        = op('insertvalue/vvc')    # (val value, elt value, idx int)
+extractvalue       = op('extractvalue/vl')    # (agg value, indices list)
+insertvalue        = op('insertvalue/vvl')    # (val value, elt value, indices list)
+gep                = op('gep/vl')             # (val value, indices list)
 
 # ______________________________________________________________________
 # Vectors

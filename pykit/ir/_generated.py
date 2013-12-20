@@ -47,11 +47,10 @@ class GeneratedBuilder(object):
     Pow                  = _const(ops.Pow)
     Round                = _const(ops.Round)
 
-    def alloca(self, returnType, value0, **kwds):
-        assert isinstance(value0, Value)
+    def alloca(self, returnType, obj0, **kwds):
         assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('alloca', returnType, [value0], register, metadata=kwds)
+        op = Op('alloca', returnType, [obj0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
@@ -327,24 +326,35 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
-    def extractvalue(self, returnType, value0, const0, **kwds):
+    def extractvalue(self, returnType, value0, lst0, **kwds):
         assert isinstance(value0, Value)
-        assert isinstance(const0, Const)
+        assert isinstance(lst0, list)
         assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('extractvalue', returnType, [value0, const0], register, metadata=kwds)
+        op = Op('extractvalue', returnType, [value0, lst0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
         return op
 
-    def insertvalue(self, returnType, value0, value1, const0, **kwds):
+    def insertvalue(self, returnType, value0, value1, lst0, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
-        assert isinstance(const0, Const)
+        assert isinstance(lst0, list)
         assert returnType is not None
         register = kwds.pop('result', None)
-        op = Op('insertvalue', returnType, [value0, value1, const0], register, metadata=kwds)
+        op = Op('insertvalue', returnType, [value0, value1, lst0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def gep(self, returnType, value0, lst0, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(lst0, list)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('gep', returnType, [value0, lst0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)

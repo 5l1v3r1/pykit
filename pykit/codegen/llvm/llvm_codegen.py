@@ -314,13 +314,29 @@ class Translator(object):
 
     # __________________________________________________________________
 
-    def op_extractvalue(self, op, val, idx):
-        assert isinstance(idx, lc.ConstantInt)
-        return self.builder.extract_value(val, idx.s_ext_value, op.result)
+    def op_extractvalue(self, op, val, indices):
+        assert isinstance(indices, list)
+        assert len(indices) == 1 # awaiting for llvmpy support for multiple indices
+        return self.builder.extract_value(val, [i.s_ext_value for i in indices][0], op.result)
 
-    def op_insertvalue(self, op, val, elt, idx):
+    def op_insertvalue(self, op, val, elt, indices):
+        assert isinstance(indices, list)
+        assert len(indices) == 1 # awaiting for llvmpy support for multiple indices
+        return self.builder.insert_value(val, elt, [i.s_ext_value for i in indices][0], op.result)
+
+    def op_gep(self, op, ptr, indices):
+        assert isinstance(indices, list)
+        return self.builder.gep(ptr, indices)
+
+    # __________________________________________________________________
+
+    def op_extractelement(self, op, val, idx):
         assert isinstance(idx, lc.ConstantInt)
-        return self.builder.insert_value(val, elt, idx.s_ext_value, op.result)
+        return self.builder.extract_element(val, idx, op.result)
+
+    def op_insertelement(self, op, val, elt, idx):
+        assert isinstance(idx, lc.ConstantInt)
+        return self.builder.insert_element(val, elt, idx, op.result)
 
     # __________________________________________________________________
 
@@ -333,10 +349,10 @@ class Translator(object):
 
     # __________________________________________________________________
 
-    def op_alloca(self, op, ty, numElements=None):
-        if numElements:
-            return self.builder.alloca_array(self.llvm_type(ty), numElements, op.result)
-        return self.builder.alloca(self.llvm_type(ty), op.result)
+    def op_alloca(self, op, numItems):
+        if numItems is not None:
+            return self.builder.alloca_array(self.llvm_type(ty), numItems, op.result)
+        return self.builder.alloca(self.llvm_type(op.type.base), op.result)
 
     def op_load(self, op, stackvar):
         return self.builder.load(stackvar, op.result)

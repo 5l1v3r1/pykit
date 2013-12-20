@@ -43,16 +43,10 @@ class OpBuilder(_generated.GeneratedBuilder):
     Build Operations, improving upon the generated methods.
     """
 
-    def alloca(self, type, numElements=None, **kwds):
+    def alloca(self, type, numItems=None, **kwds):
         assert type is not None
-        assert numElements is None or numElements.is_integral
-        register = kwds.pop('result', None)
-        op = Op('alloca', types.Pointer(type), [type, numElements], register, metadata=kwds)
-#TODO: how can we verify this operation?
-#        if config.op_verify:
-#            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
+        assert numItems is None or numItems.is_integral
+        return super(OpBuilder, self).alloca(types.Pointer(type), numItems, **kwds)
 
     def load(self, value0, **kwds):
         # TODO: Write a builder that produces untyped code !
@@ -101,16 +95,51 @@ class OpBuilder(_generated.GeneratedBuilder):
         assert arr.type.base.is_integral or arr.type.base.is_real
         return super(OpBuilder, self).bitcast(types.Vector(arr.type.base, arr.type.count), arr, **kwds)
 
-    def insertvalue(self, agg, elt, idx, **kwds):
-        assert agg.type.is_array or agg.type.is_struct
-        assert elt.type == agg.type.base
-        #assert idx.type.is_integral # llvmpy expects a python it, not a int constant
-        return super(OpBuilder, self).insertvalue(agg.type, agg, elt, idx, **kwds)
+    # determines the type of an aggregate member
+    @staticmethod
+    def __findtype(t, indices):
+        assert isinstance(indices, list)
+        assert len(indices) > 0
+        for idx in indices:
+            assert isinstance(idx, Const)
+            assert idx.type.is_integral
+            if t.is_array:
+                t = t.base
+            elif t.is_struct:
+                t = t.types[idx.const]
+            else:
+                assert False
+        return t
 
-    def extractvalue(self, agg, idx, **kwds):
-        assert agg.type.is_array or agg.type.is_struct
-        #assert idx.type.is_integral
-        return super(OpBuilder, self).extractvalue(agg.type.base, agg, idx, **kwds)
+    def insertvalue(self, agg, elt, indices, **kwds):
+        assert isinstance(indices, list)
+        assert len(indices) > 0
+        self.__findtype(agg.type, indices)
+        return super(OpBuilder, self).insertvalue(agg.type, agg, elt, indices, **kwds)
+
+    def extractvalue(self, agg, indices, **kwds):
+        assert isinstance(indices, list)
+        assert len(indices) > 0
+        returnType = self.__findtype(agg.type, indices)
+        return super(OpBuilder, self).extractvalue(returnType, agg, indices, **kwds)
+
+    def insertelement(self, vec, elt, idx, **kwds):
+        assert vec.type.is_vector
+        assert elt.type == vec.type.base
+        assert idx.type.is_integral
+        return super(OpBuilder, self).insertelement(vec.type, vec, elt, idx, **kwds)
+
+    def extractelement(self, vec, idx, **kwds):
+        assert vec.type.is_vector
+        assert idx.type.is_integral
+        return super(OpBuilder, self).extractelement(vec.type.base, vec, idx, **kwds)
+
+    def gep(self, ptr, indices, **kwds):
+        assert ptr.type.is_pointer
+        assert isinstance(indices, list)
+        assert len(indices) > 0
+        returnType = self.__findtype(ptr.type)
+        return super(OpBuilder, self).gep(types.Pointer(returnType), ptr, indices, **kwds)
 
     invert               = unary('invert')
     uadd                 = unary('uadd')
