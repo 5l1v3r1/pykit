@@ -316,13 +316,11 @@ class Translator(object):
 
     def op_extractvalue(self, op, val, indices):
         assert isinstance(indices, list)
-        assert len(indices) == 1 # awaiting for llvmpy support for multiple indices
-        return self.builder.extract_value(val, [i.s_ext_value for i in indices][0], op.result)
+        return self.builder.extract_value(val, [i.s_ext_value for i in indices], op.result)
 
     def op_insertvalue(self, op, val, elt, indices):
         assert isinstance(indices, list)
-        assert len(indices) == 1 # awaiting for llvmpy support for multiple indices
-        return self.builder.insert_value(val, elt, [i.s_ext_value for i in indices][0], op.result)
+        return self.builder.insert_value(val, elt, [i.s_ext_value for i in indices], op.result)
 
     def op_gep(self, op, ptr, indices):
         assert isinstance(indices, list)
