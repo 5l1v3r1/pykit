@@ -46,7 +46,7 @@ class OpBuilder(_generated.GeneratedBuilder):
     def alloca(self, type, numItems=None, **kwds):
         assert type is not None
         assert numItems is None or numItems.is_integral
-        return super(OpBuilder, self).alloca(types.Pointer(type), numItems, **kwds)
+        return super(OpBuilder, self).alloca(type, numItems, **kwds)
 
     def load(self, value0, **kwds):
         # TODO: Write a builder that produces untyped code !
@@ -60,8 +60,7 @@ class OpBuilder(_generated.GeneratedBuilder):
 
     def store(self, val, var, **kwds):
         assert var.type.is_pointer
-        assert val.type == var.type.base or var.type.base.is_opaque, (
-            val.type, var.type, val, var)
+        assert val.type == var.type.base or var.type.base.is_opaque, (val.type, var.type, val, var)
         return super(OpBuilder, self).store(val, var, **kwds)
 
     def call(self, type, func, args, **kwds):

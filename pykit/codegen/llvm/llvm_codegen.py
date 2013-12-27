@@ -232,7 +232,7 @@ class Translator(object):
             return arg
         t = op.type.base if op.type.is_vector else op.type
         from llpython.byte_translator import LLVMCaster
-        unsigned = t.is_int and t.unsigned
+        unsigned = t.is_integral and t.unsigned
         # The float cast doesn't accept this keyword argument
         kwds = {'unsigned': unsigned} if unsigned else {}
         return LLVMCaster.build_cast(self.builder, arg,
@@ -403,7 +403,7 @@ class Translator(object):
 
     def op_ptrcast(self, op, val):
         ltype = self.llvm_type(op.type)
-        if op.type.is_int:
+        if op.type.is_integral:
             return self.builder.ptrtoint(val, ltype)
         else:
             return self.builder.bitcast(val, ltype, op.result)
