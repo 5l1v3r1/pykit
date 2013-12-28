@@ -63,7 +63,7 @@ def inline(func, call):
         call.delete()
 
     func.reset_uses()
-    verify(func)
+    #verify(func)
 
     return valuemap
 

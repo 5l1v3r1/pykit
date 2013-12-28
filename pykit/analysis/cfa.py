@@ -219,12 +219,15 @@ def compute_dominators(func, cfg):
     for block in func.blocks:
         dominators[block] = set(func.blocks)
 
+    blocks = list(cfg)
+    preds = dict((block, cfg.predecessors(block)) for block in blocks)
+
     # Solve equation
     changed = True
     while changed:
         changed = False
-        for block in cfg:
-            pred_doms = [dominators[pred] for pred in cfg.predecessors(block)]
+        for block in blocks:
+            pred_doms = [dominators[pred] for pred in preds[block]]
             new_doms = set([block]) | set.intersection(*pred_doms or [set()])
             if new_doms != dominators[block]:
                 dominators[block] = new_doms
