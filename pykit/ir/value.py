@@ -374,16 +374,26 @@ class Operation(Local):
 
     def __init__(self, opcode, type, args, result=None, parent=None,
                  metadata=None):
-        self.parent   = parent
-        self.opcode   = opcode
-        self.type     = type
+        self.parent    = parent
+        self.opcode    = opcode
+        self.type      = type
         self._args     = args
-        self.result   = result
-        self.metadata = {}
-        self._prev    = None
-        self._next    = None
+        self.result    = result
+        self._metadata = None
+        self._prev     = None
+        self._next     = None
         if metadata:
             self.add_metadata(metadata)
+
+    def get_metadata(self):
+        if self._metadata is None:
+            self._metadata = {}
+        return self._metadata
+
+    def set_metadata(self, metadata):
+        self._metadata = metadata
+
+    metadata = property(get_metadata, set_metadata)
 
     @property
     def uses(self):
