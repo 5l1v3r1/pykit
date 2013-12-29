@@ -20,6 +20,8 @@ from pykit.utils import (flatten, nestedmap, match, Delegate, traits, listify,
 class Value(object):
     __str__ = pretty
 
+    __slots__ = ()
+
 class Module(Value):
     """
     A module containing global values and functions. This defines the scope
@@ -28,6 +30,8 @@ class Module(Value):
         globals:    { global_name: GlobalValue }
         functions:  { func_name : Function }
     """
+
+    __slots__ = ('globals', 'functions', 'temp')
 
     def __init__(self, globals=None, functions=None, temper=None):
         self.globals = globals or {}
@@ -90,6 +94,9 @@ class Function(Value):
     temp: function, name -> tempname
         allocate a temporary name
     """
+
+    __slots__ = ('module', 'name', 'type', 'temp', 'blocks', 'blockmap',
+                 'argnames', 'argdict', 'uses')
 
     def __init__(self, name, argnames, type, temper=None):
         self.module = None
@@ -204,6 +211,8 @@ class GlobalValue(Value):
     GlobalValue in a Module.
     """
 
+    __slots__ = ('module', 'name', 'type', 'external', 'address', 'value')
+
     def __init__(self, name, type, external=False, address=None, value=None):
         self.module = None
         self.name = name
@@ -228,12 +237,15 @@ class Block(Value):
     """
 
     head, tail = Delegate('ops'), Delegate('ops')
-    _prev, _next = None, None # LinkedList
+
+    __slots__ = ('name', 'parent', 'ops', '_prev', '_next')
 
     def __init__(self, name, parent=None, ops=None):
         self.name   = name
         self.parent = parent
         self.ops = LinkedList(ops or [])
+        self._prev = None
+        self._next = None
 
     @property
     def opcodes(self):
@@ -301,6 +313,8 @@ class Local(Value):
     Constants do not belong to any function.
     """
 
+    __slots__ = ()
+
     @property
     def function(self):
         """The Function owning this local value"""
@@ -327,6 +341,8 @@ class FuncArg(Local):
     """
     Argument to the function. Use Function.get_arg()
     """
+
+    __slots__ = ('parent', 'opcode', 'type', 'result')
 
     def __init__(self, func, name, type):
         self.parent = func
@@ -369,8 +385,8 @@ class Operation(Local):
         Operand values, e.g. [Operation("getindex", ...)
     """
 
-    # __slots__ = ("parent", "opcode", "type", "args", "result", "metadata",
-    #              "_prev", "_next")
+    __slots__ = ("parent", "opcode", "type", "args", "result", "metadata",
+                  "_prev", "_next", "_args", "_metadata")
 
     def __init__(self, opcode, type, args, result=None, parent=None,
                  metadata=None):
@@ -593,6 +609,8 @@ class Constant(Value):
     (passes as a Struct).
     """
 
+    __slots__ = ('opcode', 'type', 'args', 'result')
+
     def __init__(self, pyval, type=None):
         self.opcode = ops.constant
         self.type = type or types.typeof(pyval)
@@ -621,6 +639,8 @@ class Constant(Value):
 class Pointer(Value):
     """Pointer to constant value"""
 
+    __slots__ = ('addr', 'type')
+
     def __init__(self, addr, type):
         self.addr = addr
         self.type = type
@@ -635,6 +655,8 @@ class Pointer(Value):
 
 class Struct(Value):
     """Represents a constant Struct value"""
+
+    __slots__ = ('names', 'values', 'type')
 
     def __init__(self, names, values, type):
         self.names = names
@@ -652,6 +674,8 @@ class Struct(Value):
 
 class Undef(Value):
     """Undefined value"""
+
+    __slots__ = ('type',)
 
     def __init__(self, type):
         self.type = type
