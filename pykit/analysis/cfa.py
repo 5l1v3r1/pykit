@@ -169,8 +169,17 @@ def compute_dataflow(func, cfg, allocas, phis):
 
 def prune_phis(func, phis):
     """Delete unnecessary phis (all incoming values equivalent)"""
+    # TODO: Exploit sparsity
+    changed = True
+    while changed:
+        changed = _prune_phis(func, phis)
+
+def _prune_phis(func, phis):
+    changed = []
+
     def delete(op):
         op.delete()
+        changed.append(op)
         if op in phis:
             # Pruning newly introduced phi, delete from phi map
             del phis[op]
@@ -188,6 +197,8 @@ def prune_phis(func, phis):
                 [arg] = set(args) - set([op])
                 op.replace_uses(arg)
                 delete(op)
+
+    return bool(changed)
 
 # ______________________________________________________________________
 
@@ -208,12 +219,15 @@ def compute_dominators(func, cfg):
     for block in func.blocks:
         dominators[block] = set(func.blocks)
 
+    blocks = list(cfg)
+    preds = dict((block, cfg.predecessors(block)) for block in blocks)
+
     # Solve equation
     changed = True
     while changed:
         changed = False
-        for block in cfg:
-            pred_doms = [dominators[pred] for pred in cfg.predecessors(block)]
+        for block in blocks:
+            pred_doms = [dominators[pred] for pred in preds[block]]
             new_doms = set([block]) | set.intersection(*pred_doms or [set()])
             if new_doms != dominators[block]:
                 dominators[block] = new_doms
