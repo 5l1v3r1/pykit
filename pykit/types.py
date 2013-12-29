@@ -60,10 +60,12 @@ class Typedef(typetuple('Typedef',  ['name', 'type'])):
     def __init__(self, name, ty):
         setattr(self, 'is_' + type(ty).__name__.lower(), True)
 
+
 for ty in alltypes:
+    attr = 'is_' + ty.__name__.lower()
     for ty2 in alltypes:
-        setattr(ty, 'is_' + ty2.__name__.lower(), False)
-    setattr(ty, 'is_' + ty.__name__.lower(), True)
+        setattr(ty2, attr, False)
+    setattr(ty, attr, True)
 
 # ______________________________________________________________________
 # Types
