@@ -55,39 +55,22 @@ compare_bool = {
     '!=' : lc.ICMP_NE
 }
 
-
-def create_constant(typ, value):
-    """
-    Creates a constant scalar, or vector of constant scalars
-    """
-    t = typ.base if typ.is_vector else typ
-    if t.is_int:
-        const = Constant.int(type, value)
-    elif t.is_real:
-        const = Constant.real(type, value)
-    else:
-        raise "Incorrect type"
-    if type.is_vector:
-        const = Constant.vector([const] * typ.count)
-    return const
-
-
 # below based on from npm/codegen
 
-def integer_invert(builder, val):
+def integer_invert(builder, val, valtype):
     return builder.not_(val)
 
-def integer_usub(builder, val):
-    return builder.sub(create_constant(val.type, 0), val)
+def integer_usub(builder, val, valtype):
+    return builder.sub(make_constant(0, valtype), val)
 
-def integer_not(builder, value):
-    return builder.icmp(lc.ICMP_EQ, value, create_constant(value.type, 0))
+def integer_not(builder, value, valtype):
+    return builder.icmp(lc.ICMP_EQ, value, make_constant(0, valtype))
 
-def float_usub(builder, val):
-    return builder.fsub(create_constant(val.type, 0), val)
+def float_usub(builder, val, valtype):
+    return builder.fsub(make_constant(0, valtype), val)
 
-def float_not(builder, val):
-    return builder.fcmp(lc.FCMP_OEQ, val, create_constant(val.type, 0))
+def float_not(builder, val, valtype):
+    return builder.fcmp(lc.FCMP_OEQ, val, make_constant(0, valtype))
 
 # vector operations
 
@@ -129,13 +112,13 @@ unary_bool = {
 unary_int = {
     '~': integer_invert,
     '!': integer_not,
-    "+": lambda builder, arg: arg,
+    "+": lambda builder, arg, valtype: arg,
     "-": integer_usub,
 }
 
 unary_float = {
     '!': float_not,
-    "+": lambda builder, arg: arg,
+    "+": lambda builder, arg, valtype: arg,
     "-": float_usub,
 }
 
@@ -201,12 +184,12 @@ class Translator(object):
                   Integral: unary_int,
                   Real: unary_float }[type(t)]
         unop = defs.unary_opcodes[op.opcode]
-        return opmap[unop](self.builder, arg)
+        return opmap[unop](self.builder, arg, op.type)
 
     def op_binary(self, op, left, right):
         t = op.type.base if op.type.is_vector else op.type
         binop = defs.binary_opcodes[op.opcode]
-        if t.is_integral:
+        if t.is_int:
             genop = binop_int[binop][t.unsigned]
         else:
             genop = binop_float[binop]
@@ -232,7 +215,7 @@ class Translator(object):
             return arg
         t = op.type.base if op.type.is_vector else op.type
         from llpython.byte_translator import LLVMCaster
-        unsigned = t.is_integral and t.unsigned
+        unsigned = t.is_int and t.unsigned
         # The float cast doesn't accept this keyword argument
         kwds = {'unsigned': unsigned} if unsigned else {}
         return LLVMCaster.build_cast(self.builder, arg,
@@ -403,7 +386,7 @@ class Translator(object):
 
     def op_ptrcast(self, op, val):
         ltype = self.llvm_type(op.type)
-        if op.type.is_integral:
+        if op.type.is_int:
             return self.builder.ptrtoint(val, ltype)
         else:
             return self.builder.bitcast(val, ltype, op.result)
@@ -520,6 +503,9 @@ def make_constant(value, ty):
     elif type(ty) == Struct:
         return lc.Constant.struct([make_constant(unwrap(c), c.type)
                                        for c in value.values])
+    elif ty.is_vector:
+        const = make_constant(value, ty.base)
+        return lc.Constant.vector([const] * ty.count)
     else:
         raise NotImplementedError("Constants for", type(ty))
 

@@ -38,7 +38,7 @@ def typetuple(name, elems):
 
 VoidT      = typetuple('Void',     [])
 Boolean    = typetuple('Bool',     [])
-Integral   = typetuple('Integral', ['bits', 'unsigned'])
+Integral   = typetuple('Int',      ['bits', 'unsigned'])
 Real       = typetuple('Real',     ['bits'])
 Array      = typetuple('Array',    ['base', 'count'])
 Vector     = typetuple('Vector',   ['base', 'count'])

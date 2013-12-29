@@ -38,3 +38,7 @@ class TestVector(unittest.TestCase):
         assert op.opcode == 'ret'
         assert isinstance(op.args[0], Const)
         self.assertEqual(op.args[0].const, 5) # TODO: construct vector to compare?
+
+
+if __name__ == '__main__':
+    unittest.main()
