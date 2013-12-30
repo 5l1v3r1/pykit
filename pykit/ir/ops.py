@@ -125,6 +125,12 @@ ptrcast            = op('ptrcast/v')          # expr pointer
 ptr_isnull         = op('ptr_isnull/v')       # expr pointer
 
 # ______________________________________________________________________
+# Structs/Arrays/Objects/Vectors
+
+get                = op('get/vl')        # (expr value, list index)
+set                = op('set/vvl')       # (expr value, expr value, list index)
+
+# ______________________________________________________________________
 # Attributes
 
 getfield           = op('getfield/vo')        # (expr value, str attr)
@@ -137,20 +143,9 @@ extractfield       = op('extractfield/vo')
 insertfield        = op('insertfield/vov')
 
 # ______________________________________________________________________
-# Aggregates (structs/arrays)
-
-extractvalue       = op('extractvalue/vl')    # (agg value, indices list)
-insertvalue        = op('insertvalue/vvl')    # (val value, elt value, indices list)
-gep                = op('gep/vl')             # (val value, indices list)
-
-# ______________________________________________________________________
 # Vectors
 
-extractelement     = op('extractelement/vv')  # (expr vector, int index)
-insertelement      = op('insertelement/vvv')  # (expr vector, expr value, int index)
 shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
-packvector         = op('packvector/v')       # (expr vector)
-unpackvector       = op('unpackvector/v')     # (expr vector)
 
 # ______________________________________________________________________
 # Basic operators

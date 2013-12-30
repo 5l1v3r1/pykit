@@ -45,7 +45,7 @@ class OpBuilder(_generated.GeneratedBuilder):
 
     def alloca(self, type, numItems=None, **kwds):
         assert type is not None
-        assert numItems is None or numItems.is_integral
+        assert numItems is None or numItems.is_int
         return super(OpBuilder, self).alloca(type, numItems, **kwds)
 
     def load(self, value0, **kwds):
@@ -84,61 +84,88 @@ class OpBuilder(_generated.GeneratedBuilder):
         assert ptr.type.is_pointer
         return super(OpBuilder, self).ptr_isnull(types.Bool, ptr, **kwds)
 
-    def unpackvector(self, vec, **kwds):
-        assert vec.type.is_vector
-        assert vec.type.base.is_integral or vec.type.base.is_real
-        return super(OpBuilder, self).bitcast(types.Array(vec.type.base, vec.type.count), vec, **kwds)
+    def shufflevector(self, vec1, vec2, mask, **kwds):
+        assert vec1.type.is_vector
+        if vec2:
+            assert vec2.type == vec1.type
+        assert mask.type.is_vector
+        assert mask.type.base.is_int
+        restype = types.Vector(vec1.type.base, mask.type.count)
+        return super(OpBuilder, self).shufflevector(restype, vec1, vec2, mask, **kwds)
 
-    def packvector(self, arr, **kwds):
-        assert arr.type.is_array
-        assert arr.type.base.is_integral or arr.type.base.is_real
-        return super(OpBuilder, self).bitcast(types.Vector(arr.type.base, arr.type.count), arr, **kwds)
+    # def vectortoint(self, vec, **kwds):
+    #     assert vec.type.is_vector
+    #     assert vec.type.base.is_int or vec.type.base.is_real
+    #     restype = types.Integral(vec.type.base.bits * vec.type.count, True)
+    #     return super(OpBuilder, self).bitcast(restype, vec, **kwds)
+    #
+    # def vectorfromint(self, elty, i, **kwds):
+    #     assert elty.is_int or elty.is_real
+    #     assert i.type.bits % ty.type.bits == 0
+    #     restype = types.Vector(elty, i.type.bits / ty.type.bits)
+    #     return super(OpBuilder, self).bitcast(restype, i, **kwds)
+
+    # def vectortoarray(self, vec, **kwds):
+    #     assert vec.type.is_vector
+    #     assert vec.type.base.is_int or vec.type.base.is_real
+    #     restype = types.Array(vec.type.base, vec.type.count)
+    #     return bitcast(restype, vec, **kwds)
+    #
+    # def vectorfromarray(self, parr, **kwds):
+    #     assert parr.type.is_pointer
+    #     assert parr.type.base.is_array
+    #     assert parr.type.base.base.is_int or parr.type.base.base.is_real
+    #     vectype = types.Vector(parr.type.base.base, parr.type.base.count)
+    #     pvec = self.bitcast(types.Pointer(vectype), parr)
+    #     return self.ptrload(pvec)
 
     # determines the type of an aggregate member
     @staticmethod
-    def __findtype(t, indices):
-        assert isinstance(indices, list)
-        assert len(indices) > 0
-        for idx in indices:
-            assert isinstance(idx, Const)
-            assert idx.type.is_integral
+    def __indextype(t, idx):
+        # must be a list of indexes
+        assert isinstance(idx, list)
+        assert len(idx) > 0
+
+        # single level vector
+        if t.is_vector:
+            assert len(idx) == 1
+            assert isinstance(idx[0], Const)
+            return t.base
+
+        # go through all indices
+        for i in range(len(idx)):
             if t.is_array:
+                assert isinstance(idx[i], Const) and idx[i].type.is_int
+                idx[i] = idx[i].const
                 t = t.base
             elif t.is_struct:
-                t = t.types[idx.const]
+                # convert to int index
+                if i.type.is_int and isinstance(i, Const):
+                    idx[i] = idx[i].const
+                elif isinstance(idx[i], str):
+                    assert t.is_struct
+                    idx[i] = t.names.index(idx[i])
+                assert isinstance(i, int), "Invalid index " + idx[i]
+
+                t = t.types[idx[i]]
             else:
-                assert False
+                assert False, "Index too deep for type"
         return t
 
-    def insertvalue(self, agg, elt, indices, **kwds):
-        assert isinstance(indices, list)
-        assert len(indices) > 0
-        self.__findtype(agg.type, indices)
-        return super(OpBuilder, self).insertvalue(agg.type, agg, elt, indices, **kwds)
+    def set(self, target, value, idx, **kwds):
+        # handle single-level indices
+        if not isinstance(idx, list):
+            idx = [idx]
+        t = self.__indextype(target.type, idx)
+        assert value.type == t
+        return super(OpBuilder, self).set(target.type, target, value, idx, **kwds)
 
-    def extractvalue(self, agg, indices, **kwds):
-        assert isinstance(indices, list)
-        assert len(indices) > 0
-        returnType = self.__findtype(agg.type, indices)
-        return super(OpBuilder, self).extractvalue(returnType, agg, indices, **kwds)
-
-    def insertelement(self, vec, elt, idx, **kwds):
-        assert vec.type.is_vector
-        assert elt.type == vec.type.base
-        assert idx.type.is_integral
-        return super(OpBuilder, self).insertelement(vec.type, vec, elt, idx, **kwds)
-
-    def extractelement(self, vec, idx, **kwds):
-        assert vec.type.is_vector
-        assert idx.type.is_integral
-        return super(OpBuilder, self).extractelement(vec.type.base, vec, idx, **kwds)
-
-    def gep(self, ptr, indices, **kwds):
-        assert ptr.type.is_pointer
-        assert isinstance(indices, list)
-        assert len(indices) > 0
-        returnType = self.__findtype(ptr.type)
-        return super(OpBuilder, self).gep(types.Pointer(returnType), ptr, indices, **kwds)
+    def get(self, target, idx, **kwds):
+        # handle single-level indices
+        if not isinstance(idx, list):
+            idx = [idx]
+        t = self.__indextype(target.type, idx)
+        return super(OpBuilder, self).get(t, target, idx, **kwds)
 
     invert               = unary('invert')
     uadd                 = unary('uadd')

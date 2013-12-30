@@ -72,13 +72,6 @@ def float_usub(builder, val, valtype):
 def float_not(builder, val, valtype):
     return builder.fcmp(lc.FCMP_OEQ, val, make_constant(0, valtype))
 
-# vector operations
-
-def vector_pack(builder, values):
-    return builder.ret(Constant.vector(values))
-
-def vector_fill(builder, value, count):
-    return builder.ret(Constant.vector([value] * count))
 
 # operators
 
@@ -210,6 +203,14 @@ class Translator(object):
 
     # __________________________________________________________________
 
+    def op_packvector(self, op, arr):
+        return self.op_bitcast(op, arr)
+
+    def op_unpackvector(self, op, vec):
+        return self.op_bitcast(op, vec)
+
+    # __________________________________________________________________
+
     def op_convert(self, op, arg):
         if op.args[0].type == op.type:
             return arg
@@ -224,7 +225,7 @@ class Translator(object):
     def op_bitcast(self, op, val):
         if op.args[0].type == op.type:
             return val
-        return self.builder.bitcast(val, self.llvm_type(op.type), op.result)
+        return self.builder.bitcast(val, self.llvm_type(op.type))
 
     # __________________________________________________________________
 
@@ -264,6 +265,18 @@ class Translator(object):
         lfunc = self.lmod.get_or_insert_function(
             lfunc_type, 'pykit.math.%s.%s' % (map(str, argtypes), name.lower()))
         return self.builder.call(lfunc, args, op.result)
+
+    # __________________________________________________________________
+
+    def op_get(self, op, target, idx):
+        if op.args[0].type.is_vector:
+            return self.builder.extract_element(target, idx[0], name=op.result)
+        return self.builder.extract_value(target, idx, op.result)
+
+    def op_set(self, op, target, value, idx):
+        if op.args[0].type.is_vector:
+            return self.builder.insert_element(target, value, idx[0], name=op.result)
+        return self.builder.insert_value(target, value, idx, op.result)
 
     # __________________________________________________________________
 
@@ -311,13 +324,8 @@ class Translator(object):
 
     # __________________________________________________________________
 
-    def op_extractelement(self, op, val, idx):
-        assert isinstance(idx, lc.ConstantInt)
-        return self.builder.extract_element(val, idx, op.result)
-
-    def op_insertelement(self, op, val, elt, idx):
-        assert isinstance(idx, lc.ConstantInt)
-        return self.builder.insert_element(val, elt, idx, op.result)
+    def op_shufflevector(self, op, a, b, mask, idx):
+        return self.builder.shuffle_vector(val, a, b, mask, op.result)
 
     # __________________________________________________________________
 
@@ -332,8 +340,8 @@ class Translator(object):
 
     def op_alloca(self, op, numItems):
         if numItems is not None:
-            return self.builder.alloca_array(self.llvm_type(ty), numItems, op.result)
-        return self.builder.alloca(self.llvm_type(op.type.base), op.result)
+            return self.builder.alloca_array(self.llvm_type(ty), numItems, name=op.result)
+        return self.builder.alloca(self.llvm_type(op.type.base), name=op.result)
 
     def op_load(self, op, stackvar):
         return self.builder.load(stackvar, op.result)
