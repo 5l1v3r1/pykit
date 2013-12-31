@@ -138,7 +138,7 @@ def sizeof(builder, ty, intp):
 def gep(builder, struct_type, p, attr):
     index = struct_type.names.index(attr)
     return builder.gep(p, [const_i32(0), const_i32(index)])
-
+ 
 #===------------------------------------------------------------------===
 # Translator
 #===------------------------------------------------------------------===
@@ -269,14 +269,41 @@ class Translator(object):
     # __________________________________________________________________
 
     def op_get(self, op, target, idx):
-        if op.args[0].type.is_vector:
-            return self.builder.extract_element(target, idx[0], name=op.result)
-        return self.builder.extract_value(target, idx, op.result)
+        # convert constants
+        idx = [i.s_ext_value for i in idx]
+        target_type = op.args[0].type
+
+        # handle depending on target type
+        if target_type.is_pointer:
+            p = self.builder.gep(p, [0] + idx)
+            r = self.builder.load(p, name=op.result)
+        elif target_type.is_array or target_type.is_struct:
+            r = self.builder.extract_value(target, idx, name=op.result)
+        elif target_type.is_vector:
+            assert len(idx) == 1
+            r = self.builder.extract_element(target, idx[0], name=op.result)
+        else:
+            raise TypeError()
+        return r
 
     def op_set(self, op, target, value, idx):
-        if op.args[0].type.is_vector:
-            return self.builder.insert_element(target, value, idx[0], name=op.result)
-        return self.builder.insert_value(target, value, idx, op.result)
+        # convert constants
+        idx = [i.s_ext_value for i in idx]
+        target_type = op.args[0].type
+
+        # handle depending on target type
+        if target_type.is_pointer:
+            p = self.builder.gep(p, [0] + idx)
+            self.builder.store(p, name=op.result)
+            r = None
+        elif target_type.is_array or target_type.is_struct:
+            r = self.builder.insert_value(target, value, idx, name=op.result)
+        elif target_type.is_vector:
+            assert len(idx) == 1
+            r = self.builder.insert_element(target, value, idx[0], name=op.result)
+        else:
+            raise TypeError()
+        return r
 
     # __________________________________________________________________
 

@@ -93,32 +93,6 @@ class OpBuilder(_generated.GeneratedBuilder):
         restype = types.Vector(vec1.type.base, mask.type.count)
         return super(OpBuilder, self).shufflevector(restype, vec1, vec2, mask, **kwds)
 
-    # def vectortoint(self, vec, **kwds):
-    #     assert vec.type.is_vector
-    #     assert vec.type.base.is_int or vec.type.base.is_real
-    #     restype = types.Integral(vec.type.base.bits * vec.type.count, True)
-    #     return super(OpBuilder, self).bitcast(restype, vec, **kwds)
-    #
-    # def vectorfromint(self, elty, i, **kwds):
-    #     assert elty.is_int or elty.is_real
-    #     assert i.type.bits % ty.type.bits == 0
-    #     restype = types.Vector(elty, i.type.bits / ty.type.bits)
-    #     return super(OpBuilder, self).bitcast(restype, i, **kwds)
-
-    # def vectortoarray(self, vec, **kwds):
-    #     assert vec.type.is_vector
-    #     assert vec.type.base.is_int or vec.type.base.is_real
-    #     restype = types.Array(vec.type.base, vec.type.count)
-    #     return bitcast(restype, vec, **kwds)
-    #
-    # def vectorfromarray(self, parr, **kwds):
-    #     assert parr.type.is_pointer
-    #     assert parr.type.base.is_array
-    #     assert parr.type.base.base.is_int or parr.type.base.base.is_real
-    #     vectype = types.Vector(parr.type.base.base, parr.type.base.count)
-    #     pvec = self.bitcast(types.Pointer(vectype), parr)
-    #     return self.ptrload(pvec)
-
     # determines the type of an aggregate member
     @staticmethod
     def __indextype(t, idx):

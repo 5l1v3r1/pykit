@@ -125,7 +125,7 @@ ptrcast            = op('ptrcast/v')          # expr pointer
 ptr_isnull         = op('ptr_isnull/v')       # expr pointer
 
 # ______________________________________________________________________
-# Structs/Arrays/Objects/Vectors
+# Unified: Structs/Arrays/Objects/Vectors
 
 get                = op('get/vl')        # (expr value, list index)
 set                = op('set/vvl')       # (expr value, expr value, list index)
