@@ -79,7 +79,7 @@ constant           = op('constant/o')         # object pyval
 # ______________________________________________________________________
 # Variables
 
-alloca             = op('alloca/')
+alloca             = op('alloca/o')           # obj numItems [length of allocation implied by return type]
 load               = op('load/v')             # alloc var
 store              = op('store/vv')           # expr value, alloc var
 
@@ -87,6 +87,7 @@ store              = op('store/vv')           # expr value, alloc var
 # Conversion
 
 convert            = op('convert/v')          # expr arg
+bitcast            = op('bitcast/v')          # expr value
 
 # ______________________________________________________________________
 # Control flow
@@ -124,16 +125,27 @@ ptrcast            = op('ptrcast/v')          # expr pointer
 ptr_isnull         = op('ptr_isnull/v')       # expr pointer
 
 # ______________________________________________________________________
+# Unified: Structs/Arrays/Objects/Vectors
+
+get                = op('get/vl')        # (expr value, list index)
+set                = op('set/vvl')       # (expr value, expr value, list index)
+
+# ______________________________________________________________________
 # Attributes
 
 getfield           = op('getfield/vo')        # (expr value, str attr)
 setfield           = op('setfield/vov')       # (expr value, str attr, expr value)
 
 # ______________________________________________________________________
-# Insert field
+# Fields
 
 extractfield       = op('extractfield/vo')
 insertfield        = op('insertfield/vov')
+
+# ______________________________________________________________________
+# Vectors
+
+shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
 
 # ______________________________________________________________________
 # Basic operators

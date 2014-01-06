@@ -43,6 +43,7 @@ typedef Type Exception;
 typedef Type Typedef;
 
 typedef Type BytesT;
+typedef Type Vector;
 
 /* Units */
 typedef Type Void;
@@ -51,10 +52,12 @@ typedef Type Int8;
 typedef Type Int16;
 typedef Type Int32;
 typedef Type Int64;
+typedef Type Int128;
 typedef Type UInt8;
 typedef Type UInt16;
 typedef Type UInt32;
 typedef Type UInt64;
+typedef Type UInt128;
 
 typedef Type Float32;
 typedef Type Float64;

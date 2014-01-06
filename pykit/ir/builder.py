@@ -9,7 +9,7 @@ from contextlib import contextmanager
 
 from pykit import error
 from pykit import types
-from pykit.ir import Value, Const, Undef, ops, findop, FuncArg, blocks
+from pykit.ir import Op, Value, Const, Undef, ops, findop, FuncArg, blocks
 from . import _generated
 
 #===------------------------------------------------------------------===
@@ -43,10 +43,10 @@ class OpBuilder(_generated.GeneratedBuilder):
     Build Operations, improving upon the generated methods.
     """
 
-    def alloca(self, type,  **kwds):
+    def alloca(self, type, numItems=None, **kwds):
         assert type is not None
-        assert type.is_pointer
-        return super(OpBuilder, self).alloca(type, **kwds)
+        assert numItems is None or numItems.is_int
+        return super(OpBuilder, self).alloca(type, numItems, **kwds)
 
     def load(self, value0, **kwds):
         # TODO: Write a builder that produces untyped code !
@@ -60,8 +60,7 @@ class OpBuilder(_generated.GeneratedBuilder):
 
     def store(self, val, var, **kwds):
         assert var.type.is_pointer
-        assert val.type == var.type.base or var.type.base.is_opaque, (
-            val.type, var.type, val, var)
+        assert val.type == var.type.base or var.type.base.is_opaque, (val.type, var.type, val, var)
         return super(OpBuilder, self).store(val, var, **kwds)
 
     def call(self, type, func, args, **kwds):
@@ -84,6 +83,63 @@ class OpBuilder(_generated.GeneratedBuilder):
     def ptr_isnull(self, ptr, **kwds):
         assert ptr.type.is_pointer
         return super(OpBuilder, self).ptr_isnull(types.Bool, ptr, **kwds)
+
+    def shufflevector(self, vec1, vec2, mask, **kwds):
+        assert vec1.type.is_vector
+        if vec2:
+            assert vec2.type == vec1.type
+        assert mask.type.is_vector
+        assert mask.type.base.is_int
+        restype = types.Vector(vec1.type.base, mask.type.count)
+        return super(OpBuilder, self).shufflevector(restype, vec1, vec2, mask, **kwds)
+
+    # determines the type of an aggregate member
+    @staticmethod
+    def __indextype(t, idx):
+        # must be a list of indexes
+        assert isinstance(idx, list)
+        assert len(idx) > 0
+
+        # single level vector
+        if t.is_vector:
+            assert len(idx) == 1
+            assert isinstance(idx[0], Const)
+            return t.base
+
+        # go through all indices
+        for i in range(len(idx)):
+            if t.is_array:
+                assert isinstance(idx[i], Const) and idx[i].type.is_int
+                idx[i] = idx[i].const
+                t = t.base
+            elif t.is_struct:
+                # convert to int index
+                if i.type.is_int and isinstance(i, Const):
+                    idx[i] = idx[i].const
+                elif isinstance(idx[i], str):
+                    assert t.is_struct
+                    idx[i] = t.names.index(idx[i])
+                assert isinstance(i, int), "Invalid index " + idx[i]
+
+                t = t.types[idx[i]]
+            else:
+                assert False, "Index too deep for type"
+        return t
+
+    def set(self, target, value, idx, **kwds):
+        # handle single-level indices
+        if not isinstance(idx, list):
+            idx = [idx]
+        t = self.__indextype(target.type, idx)
+        assert value.type == t
+        return super(OpBuilder, self).set(target.type, target, value, idx, **kwds)
+
+    def get(self, target, idx, **kwds):
+        # handle single-level indices
+        if not isinstance(idx, list):
+            idx = [idx]
+        t = self.__indextype(target.type, idx)
+        return super(OpBuilder, self).get(t, target, idx, **kwds)
 
     invert               = unary('invert')
     uadd                 = unary('uadd')

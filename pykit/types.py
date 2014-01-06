@@ -40,7 +40,8 @@ VoidT      = typetuple('Void',     [])
 Boolean    = typetuple('Bool',     [])
 Integral   = typetuple('Int',      ['bits', 'unsigned'])
 Real       = typetuple('Real',     ['bits'])
-Array      = typetuple('Array',    ['base', 'ndim', 'order']) # order in 'C', 'F', 'A'
+Array      = typetuple('Array',    ['base', 'count'])
+Vector     = typetuple('Vector',   ['base', 'count'])
 Struct     = typetuple('Struct',   ['names', 'types'])
 Pointer    = typetuple('Pointer',  ['base'])
 Tuple      = typetuple('Tuple',    ['bases'])
@@ -59,10 +60,12 @@ class Typedef(typetuple('Typedef',  ['name', 'type'])):
     def __init__(self, name, ty):
         setattr(self, 'is_' + type(ty).__name__.lower(), True)
 
+
 for ty in alltypes:
+    attr = 'is_' + ty.__name__.lower()
     for ty2 in alltypes:
-        setattr(ty, 'is_' + ty2.__name__.lower(), False)
-    setattr(ty, 'is_' + ty.__name__.lower(), True)
+        setattr(ty2, attr, False)
+    setattr(ty, attr, True)
 
 # ______________________________________________________________________
 # Types
@@ -73,10 +76,16 @@ Int8    = Integral(8,  False)
 Int16   = Integral(16, False)
 Int32   = Integral(32, False)
 Int64   = Integral(64, False)
+Int128  = Integral(128, False)
 UInt8   = Integral(8,  True)
 UInt16  = Integral(16, True)
 UInt32  = Integral(32, True)
 UInt64  = Integral(64, True)
+UInt128 = Integral(128, True)
+
+Vector64x2 = Vector(UInt64, 2)
+Vector32x4 = Vector(UInt32, 4)
+Vector16x8 = Vector(UInt16, 8)
 
 Float32  = Real(32)
 Float64  = Real(64)
@@ -106,8 +115,8 @@ ULongLong = Typedef("ULongLong", UInt32)
 
 # ______________________________________________________________________
 
-signed_set   = frozenset([Int8, Int16, Int32, Int64])
-unsigned_set = frozenset([UInt8, UInt16, UInt32, UInt64])
+signed_set   = frozenset([Int8, Int16, Int32, Int64, Int128])
+unsigned_set = frozenset([UInt8, UInt16, UInt32, UInt64, UInt128])
 int_set      = signed_set | unsigned_set
 float_set    = frozenset([Float32, Float64])
 # complex_set  = frozenset([Complex64, Complex128])

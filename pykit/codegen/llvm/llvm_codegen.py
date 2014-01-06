@@ -57,28 +57,30 @@ compare_bool = {
 
 # below based on from npm/codegen
 
-def integer_invert(builder, val):
-    return builder.xor(val, Constant.int_signextend(val.type, -1))
+def integer_invert(builder, val, valtype):
+    return builder.not_(val)
 
-def integer_usub(builder, val):
-    return builder.sub(Constant.int(val.type, 0), val)
+def integer_usub(builder, val, valtype):
+    return builder.sub(make_constant(0, valtype), val)
 
-def integer_not(builder, value):
-    return builder.icmp(lc.ICMP_EQ, value, Constant.int(value.type, 0))
+def integer_not(builder, value, valtype):
+    return builder.icmp(lc.ICMP_EQ, value, make_constant(0, valtype))
 
-def float_usub(builder, val):
-    return builder.fsub(Constant.real(val.type, 0), val)
+def float_usub(builder, val, valtype):
+    return builder.fsub(make_constant(0, valtype), val)
 
-def float_not(builder, val):
-    return builder.fcmp(lc.FCMP_OEQ, val, Constant.real(val.type, 0))
+def float_not(builder, val, valtype):
+    return builder.fcmp(lc.FCMP_OEQ, val, make_constant(0, valtype))
 
+
+# operators
 
 binop_int  = {
      '+': (lc.Builder.add, lc.Builder.add),
      '-': (lc.Builder.sub, lc.Builder.sub),
      '*': (lc.Builder.mul, lc.Builder.mul),
      '/': (lc.Builder.sdiv, lc.Builder.udiv),
-    '//': (lc.Builder.sdiv, lc.Builder.udiv),
+     '//': (lc.Builder.sdiv, lc.Builder.udiv),
      '%': (lc.Builder.srem, lc.Builder.urem),
      '&': (lc.Builder.and_, lc.Builder.and_),
      '|': (lc.Builder.or_, lc.Builder.or_),
@@ -92,7 +94,7 @@ binop_float = {
      '-': lc.Builder.fsub,
      '*': lc.Builder.fmul,
      '/': lc.Builder.fdiv,
-    '//': lc.Builder.fdiv,
+     '//': lc.Builder.fdiv,
      '%': lc.Builder.frem,
 }
 
@@ -103,13 +105,13 @@ unary_bool = {
 unary_int = {
     '~': integer_invert,
     '!': integer_not,
-    "+": lambda builder, arg: arg,
+    "+": lambda builder, arg, valtype: arg,
     "-": integer_usub,
 }
 
 unary_float = {
     '!': float_not,
-    "+": lambda builder, arg: arg,
+    "+": lambda builder, arg, valtype: arg,
     "-": float_usub,
 }
 
@@ -136,7 +138,7 @@ def sizeof(builder, ty, intp):
 def gep(builder, struct_type, p, attr):
     index = struct_type.names.index(attr)
     return builder.gep(p, [const_i32(0), const_i32(index)])
-
+ 
 #===------------------------------------------------------------------===
 # Translator
 #===------------------------------------------------------------------===
@@ -170,16 +172,18 @@ class Translator(object):
     # __________________________________________________________________
 
     def op_unary(self, op, arg):
+        t = op.type.base if op.type.is_vector else op.type
         opmap = { Boolean: unary_bool,
                   Integral: unary_int,
-                  Real: unary_float }[type(op.type)]
+                  Real: unary_float }[type(t)]
         unop = defs.unary_opcodes[op.opcode]
-        return opmap[unop](self.builder, arg)
+        return opmap[unop](self.builder, arg, op.type)
 
     def op_binary(self, op, left, right):
+        t = op.type.base if op.type.is_vector else op.type
         binop = defs.binary_opcodes[op.opcode]
-        if op.type.is_int:
-            genop = binop_int[binop][op.type.unsigned]
+        if t.is_int:
+            genop = binop_int[binop][t.unsigned]
         else:
             genop = binop_float[binop]
         return genop(self.builder, left, right, op.result)
@@ -187,6 +191,7 @@ class Translator(object):
     def op_compare(self, op, left, right):
         cmpop = defs.compare_opcodes[op.opcode]
         type = op.args[0].type
+        type = type.base if type.is_vector else type
         if type.is_int and type.unsigned:
             cmp, lop = self.builder.icmp, compare_unsiged_int[cmpop]
         elif type.is_int or type.is_bool:
@@ -198,15 +203,29 @@ class Translator(object):
 
     # __________________________________________________________________
 
+    def op_packvector(self, op, arr):
+        return self.op_bitcast(op, arr)
+
+    def op_unpackvector(self, op, vec):
+        return self.op_bitcast(op, vec)
+
+    # __________________________________________________________________
+
     def op_convert(self, op, arg):
         if op.args[0].type == op.type:
             return arg
+        t = op.type.base if op.type.is_vector else op.type
         from llpython.byte_translator import LLVMCaster
-        unsigned = op.type.is_int and op.type.unsigned
-        # The float cast doens't accept this keyword argument
+        unsigned = t.is_int and t.unsigned
+        # The float cast doesn't accept this keyword argument
         kwds = {'unsigned': unsigned} if unsigned else {}
         return LLVMCaster.build_cast(self.builder, arg,
-                                     self.llvm_type(op.type), **kwds)
+                                     self.llvm_type(t), **kwds)
+
+    def op_bitcast(self, op, val):
+        if op.args[0].type == op.type:
+            return val
+        return self.builder.bitcast(val, self.llvm_type(op.type))
 
     # __________________________________________________________________
 
@@ -249,6 +268,45 @@ class Translator(object):
 
     # __________________________________________________________________
 
+    def op_get(self, op, target, idx):
+        # convert constants
+        idx = [i.s_ext_value for i in idx]
+        target_type = op.args[0].type
+
+        # handle depending on target type
+        if target_type.is_pointer:
+            p = self.builder.gep(p, [0] + idx)
+            r = self.builder.load(p, name=op.result)
+        elif target_type.is_array or target_type.is_struct:
+            r = self.builder.extract_value(target, idx, name=op.result)
+        elif target_type.is_vector:
+            assert len(idx) == 1
+            r = self.builder.extract_element(target, idx[0], name=op.result)
+        else:
+            raise TypeError()
+        return r
+
+    def op_set(self, op, target, value, idx):
+        # convert constants
+        idx = [i.s_ext_value for i in idx]
+        target_type = op.args[0].type
+
+        # handle depending on target type
+        if target_type.is_pointer:
+            p = self.builder.gep(p, [0] + idx)
+            self.builder.store(p, name=op.result)
+            r = None
+        elif target_type.is_array or target_type.is_struct:
+            r = self.builder.insert_value(target, value, idx, name=op.result)
+        elif target_type.is_vector:
+            assert len(idx) == 1
+            r = self.builder.insert_element(target, value, idx[0], name=op.result)
+        else:
+            raise TypeError()
+        return r
+
+    # __________________________________________________________________
+
     def op_getfield(self, op, p, attr):
         struct_type = op.args[0].type.base
         result = gep(self.builder, struct_type, p, attr)
@@ -279,6 +337,25 @@ class Translator(object):
 
     # __________________________________________________________________
 
+    def op_extractvalue(self, op, val, indices):
+        assert isinstance(indices, list)
+        return self.builder.extract_value(val, [i.s_ext_value for i in indices], op.result)
+
+    def op_insertvalue(self, op, val, elt, indices):
+        assert isinstance(indices, list)
+        return self.builder.insert_value(val, elt, [i.s_ext_value for i in indices], op.result)
+
+    def op_gep(self, op, ptr, indices):
+        assert isinstance(indices, list)
+        return self.builder.gep(ptr, indices)
+
+    # __________________________________________________________________
+
+    def op_shufflevector(self, op, a, b, mask, idx):
+        return self.builder.shuffle_vector(val, a, b, mask, op.result)
+
+    # __________________________________________________________________
+
     def op_getindex(self, op, array, indices):
         return self.builder.gep(array, indices, op.result)
 
@@ -288,14 +365,10 @@ class Translator(object):
 
     # __________________________________________________________________
 
-    def op_getindex(self, op, array, indices):
-        return self.builder.gep(array, indices, op.result)
-
-    # __________________________________________________________________
-
-    def op_alloca(self, op):
-        llvm_pointer_type = self.llvm_type(op.type)
-        return self.builder.alloca(llvm_pointer_type.pointee, op.result)
+    def op_alloca(self, op, numItems):
+        if numItems is not None:
+            return self.builder.alloca_array(self.llvm_type(ty), numItems, name=op.result)
+        return self.builder.alloca(self.llvm_type(op.type.base), name=op.result)
 
     def op_load(self, op, stackvar):
         return self.builder.load(stackvar, op.result)
@@ -465,6 +538,9 @@ def make_constant(value, ty):
     elif type(ty) == Struct:
         return lc.Constant.struct([make_constant(unwrap(c), c.type)
                                        for c in value.values])
+    elif ty.is_vector:
+        const = make_constant(value, ty.base)
+        return lc.Constant.vector([const] * ty.count)
     else:
         raise NotImplementedError("Constants for", type(ty))
 

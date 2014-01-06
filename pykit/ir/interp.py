@@ -149,7 +149,7 @@ class Interp(object):
     # __________________________________________________________________
     # Var
 
-    def alloca(self):
+    def alloca(self, numitems=None):
         return { 'value': Undef, 'type': self.op.type }
 
     def load(self, var):
