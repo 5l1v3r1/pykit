@@ -284,6 +284,29 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
+    def get(self, returnType, value0, lst0, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(lst0, list)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('get', returnType, [value0, lst0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
+    def set(self, returnType, value0, value1, lst0, **kwds):
+        assert isinstance(value0, Value)
+        assert isinstance(value1, Value)
+        assert isinstance(lst0, list)
+        assert returnType is not None
+        register = kwds.pop('result', None)
+        op = Op('set', returnType, [value0, value1, lst0], register, metadata=kwds)
+        if config.op_verify:
+            verify_op_syntax(op)
+        self._insert_op(op)
+        return op
+
     def getfield(self, returnType, value0, obj0, **kwds):
         assert isinstance(value0, Value)
         assert returnType is not None
@@ -326,63 +349,6 @@ class GeneratedBuilder(object):
         self._insert_op(op)
         return op
 
-    def extractvalue(self, returnType, value0, lst0, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(lst0, list)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('extractvalue', returnType, [value0, lst0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def insertvalue(self, returnType, value0, value1, lst0, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert isinstance(lst0, list)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('insertvalue', returnType, [value0, value1, lst0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def gep(self, returnType, value0, lst0, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(lst0, list)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('gep', returnType, [value0, lst0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def extractelement(self, returnType, value0, value1, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('extractelement', returnType, [value0, value1], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def insertelement(self, returnType, value0, value1, value2, **kwds):
-        assert isinstance(value0, Value)
-        assert isinstance(value1, Value)
-        assert isinstance(value2, Value)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('insertelement', returnType, [value0, value1, value2], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
     def shufflevector(self, returnType, value0, value1, value2, **kwds):
         assert isinstance(value0, Value)
         assert isinstance(value1, Value)
@@ -390,26 +356,6 @@ class GeneratedBuilder(object):
         assert returnType is not None
         register = kwds.pop('result', None)
         op = Op('shufflevector', returnType, [value0, value1, value2], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def packvector(self, returnType, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('packvector', returnType, [value0], register, metadata=kwds)
-        if config.op_verify:
-            verify_op_syntax(op)
-        self._insert_op(op)
-        return op
-
-    def unpackvector(self, returnType, value0, **kwds):
-        assert isinstance(value0, Value)
-        assert returnType is not None
-        register = kwds.pop('result', None)
-        op = Op('unpackvector', returnType, [value0], register, metadata=kwds)
         if config.op_verify:
             verify_op_syntax(op)
         self._insert_op(op)
