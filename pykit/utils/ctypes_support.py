@@ -29,6 +29,9 @@ CData = type(ctypes.c_int(10)).__mro__[-2]
 # Check Whether values are ctypes values
 #===------------------------------------------------------------------===
 
+def is_ctypes_array_type(value):
+    return isinstance(value, _ctypes_array_type)
+
 def is_ctypes_function_type(value):
     return isinstance(value, _ctypes_func_type)
 
@@ -87,6 +90,8 @@ def from_ctypes_type(ctypes_type):
         return ctypes_map[ctypes_type]
     elif ctypes_type is ctypes.c_void_p:
         return types.Pointer(types.Void)
+    elif is_ctypes_array_type(ctypes_type):
+        return types.Array(from_ctypes_type(ctypes_type._type_), ctypes_type._length_)
     elif is_ctypes_pointer_type(ctypes_type):
         return types.Pointer(from_ctypes_type(ctypes_type._type_))
     elif is_ctypes_struct_type(ctypes_type):
