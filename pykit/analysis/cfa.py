@@ -8,7 +8,7 @@ phi Operations in the IR.
 from __future__ import print_function, division, absolute_import
 import collections
 
-from pykit.ir import ops, Builder, Undef, blocks
+from pykit.ir import ops, Builder, Undef, Op, blocks
 from pykit.transform import dce
 from pykit.utils import mergedicts
 
@@ -174,6 +174,8 @@ def prune_phis(func, phis):
     while changed:
         changed = _prune_phis(func, phis)
 
+    prune_undef(func, phis)
+
 def _prune_phis(func, phis):
     changed = []
 
@@ -199,6 +201,37 @@ def _prune_phis(func, phis):
                 delete(op)
 
     return bool(changed)
+
+def candidate(v):
+    return isinstance(v, Undef) or (isinstance(v, Op) and v.opcode == 'phi')
+
+def prune_undef(func, phis):
+    """
+    Prune cycles of dead phis which only have Undef inputs.
+    """
+    candidates = set()  # { phi }
+
+    for phi in phis:
+        blocks, values = phi.args
+        if all(candidate(val) for val in values):
+            candidates.add(phi)
+
+    n = 0
+    while n != len(candidates):
+        n = len(candidates)
+        for phi in list(candidates):
+            blocks, values = phi.args
+            for v in values:
+                if isinstance(v, Op):
+                    assert v.opcode == 'phi'
+                    if v not in candidates:
+                        candidates.remove(phi)
+                        break
+
+    for phi in candidates:
+        phi.set_args([])
+    for phi in candidates:
+        phi.delete()
 
 # ______________________________________________________________________
 
