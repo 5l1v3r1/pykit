@@ -44,9 +44,6 @@ Array      = typetuple('Array',    ['base', 'count'])
 Vector     = typetuple('Vector',   ['base', 'count'])
 Struct     = typetuple('Struct',   ['names', 'types'])
 Pointer    = typetuple('Pointer',  ['base'])
-Tuple      = typetuple('Tuple',    ['bases'])
-List       = typetuple('List',     ['base', 'count'])  # count == -1 if unknown
-Dict       = typetuple('Dict',     ['key', 'value', 'count'])
 Function   = typetuple('Function', ['restype', 'argtypes', 'varargs'])
 ExceptionT = typetuple('Exception',[])
 BytesT     = typetuple('Bytes',    [])
@@ -90,10 +87,6 @@ Vector16x8 = Vector(UInt16, 8)
 Float32  = Real(32)
 Float64  = Real(64)
 # Float128 = Real(128)
-
-# Complex64  = Complex(Float32)
-# Complex128 = Complex(Float64)
-# Complex256 = Complex(Float128)
 
 # Object    = ObjectT()
 Exception = ExceptionT()
@@ -144,10 +137,7 @@ typing_defaults = {
     bool:       Bool,
     int:        Int32,
     float:      Float64,
-    # complex:    Complex128,
-    tuple:      Tuple,
-    list:       List,
-    dict:       Dict,
+    # These types are not actually supported
     str:        Bytes,
     bytes:      Bytes,
 }
