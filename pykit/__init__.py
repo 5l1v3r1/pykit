@@ -6,7 +6,7 @@ import unittest
 #from . import types
 
 from pykit.configuration import config
-from pykit.parsing import from_c
+#from pykit.parsing import from_c
 
 from ._version import get_versions
 __version__ = get_versions()['version']
