@@ -93,8 +93,8 @@ class ValueDict(object):
 
 # ______________________________________________________________________
 
-def cached(f):
-    """Cache the result of the function"""
+def call_once(f):
+    """Cache the result of the function, so that it's called only once"""
     result = []
     def wrapper(*args, **kwargs):
         if len(result) == 0:
@@ -104,7 +104,18 @@ def cached(f):
         return result[0]
     return wrapper
 
-call_once = cached
+def cached(limit=1000):
+    """Cache the result for the arguments just once"""
+    def decorator(f):
+        cache = {}
+        def wrapper(*args):
+            if args not in cache:
+                if len(cache) > limit:
+                    cache.popitem()
+                cache[args] = f(*args)
+            return cache[args]
+        return wrapper
+    return decorator
 
 # ______________________________________________________________________
 
