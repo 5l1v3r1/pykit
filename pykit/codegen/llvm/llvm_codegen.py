@@ -240,11 +240,7 @@ class Translator(object):
             if lfunc.module is not self.lmod:
                 lfunc = self.lmod.get_or_insert_function(lfunc.type.pointee,
                                                          lfunc.name)
-        else:
-            lfunc = function # function pointer
 
-        if (not isinstance(function, lc.ConstantExpr) and not
-                isinstance(lfunc, lc.ConstantExpr)):
             for func_arg, arg, param in zip(function.args, args, lfunc.args):
                 if arg.type != param.type:
                     raise TypeError(
@@ -253,6 +249,8 @@ class Translator(object):
                                                          arg.type,
                                                          param.type,
                                                          func_arg.result))
+        else:
+            lfunc = function # function pointer
 
         call = self.builder.call(lfunc, args)
         return call
