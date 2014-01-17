@@ -254,7 +254,6 @@ class Translator(object):
                                                          param.type,
                                                          func_arg.result))
 
-
         call = self.builder.call(lfunc, args)
         return call
 

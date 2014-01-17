@@ -114,10 +114,13 @@ def from_ctypes_value(ctypes_value):
         assert isinstance(ctypes_value, (int, long, float))
         return Const(ctypes_value)
 
-    if is_ctypes_function(ctypes_value):
-        restype = from_ctypes_type(ctypes_value.restype)
-        argtypes = [from_ctypes_type(argty) for argty in ctypes_value.argtypes]
-        return Pointer(ptrval(ctypes_value), types.Function(restype, argtypes))
+    #if is_ctypes_function(ctypes_value):
+    #    restype = from_ctypes_type(ctypes_value.restype)
+    #    argtypes = [from_ctypes_type(argty) for argty in ctypes_value.argtypes]
+    #    ptr = ptrval(ctypes_value)
+    #    func_type = types.Function(restype, argtypes, varargs=False)
+        #func_type_p = types.Pointer(func_type)
+        #return Pointer(ptr, func_type_p)
 
     ctype = type(ctypes_value)
 
