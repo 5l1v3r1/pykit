@@ -80,31 +80,49 @@ ctypes_map = {
     None:            types.Void,
 }
 
-def from_ctypes_type(ctypes_type):
+def from_ctypes_type(ctypes_type, memo=None):
     """
     Convert a ctypes type to a pykit type.
 
     Supported are structs, unit types (int/float)
     """
+    if memo is None:
+        memo = {}
+    if hashable(ctypes_type) and ctypes_type in memo:
+        return memo[ctypes_type]
+
     if hashable(ctypes_type) and ctypes_type in ctypes_map:
-        return ctypes_map[ctypes_type]
+        result = ctypes_map[ctypes_type]
     elif ctypes_type is ctypes.c_void_p:
-        return types.Pointer(types.Void)
+        result = types.Pointer(types.Void)
     elif is_ctypes_array_type(ctypes_type):
-        return types.Array(from_ctypes_type(ctypes_type._type_), ctypes_type._length_)
+        result = types.Array(from_ctypes_type(ctypes_type._type_, memo),
+                             ctypes_type._length_)
     elif is_ctypes_pointer_type(ctypes_type):
-        return types.Pointer(from_ctypes_type(ctypes_type._type_))
+        result = types.Pointer(from_ctypes_type(ctypes_type._type_, memo))
     elif is_ctypes_struct_type(ctypes_type):
-        fields = [(name, from_ctypes_type(field_type))
+        # pre-order caching for recursive data structures
+        f_names = []
+        f_types = []
+        result = types.Struct(f_names, f_types)
+        memo[ctypes_type] = result
+
+        fields = [(name, from_ctypes_type(field_type, memo))
                       for name, field_type in ctypes_type._fields_]
         fieldnames, fieldtypes = zip(*fields) or (('dummy',), (types.Int8,))
-        return types.Struct(fieldnames, fieldtypes)
+
+        f_names.extend(fieldnames)
+        f_types.extend(fieldtypes)
     elif is_ctypes_function_type(ctypes_type):
-        c_restype = from_ctypes_type(ctypes_type._restype_)
-        c_argtypes = [from_ctypes_type(argty) for argty in ctypes_type._argtypes_]
-        return types.Function(c_restype, c_argtypes, False)
+        c_restype = from_ctypes_type(ctypes_type._restype_, memo)
+        c_argtypes = [from_ctypes_type(argty, memo)
+                          for argty in ctypes_type._argtypes_]
+        result = types.Function(c_restype, c_argtypes, False)
     else:
         raise NotImplementedError(ctypes_type)
+
+    memo[ctypes_type] = result
+    return result
 
 def from_ctypes_value(ctypes_value):
     """
