@@ -1,5 +1,15 @@
+# -*- coding: utf-8 -*-
+
+"""
+Pykit types.
+"""
+
+from __future__ import print_function, division, absolute_import
+
+from itertools import starmap
 from collections import namedtuple
-from pykit.utils import invert, hashable
+from functools import partial
+from pykit.utils import invert, hashable, listitems
 
 alltypes = set()
 
@@ -7,10 +17,17 @@ class Type(object):
     """Base of types"""
 
     def __eq__(self, other):
-        return (isinstance(other, type(self)) and
-                super(Type, self).__eq__(other) or
-                (self.is_typedef and self.type == other) or
-                (other.is_typedef and other.type == self))
+        self_recursive = recursive_terms(self)
+        other_recursive = recursive_terms(other)
+
+        if len(self_recursive) != len(other_recursive):
+            return False
+        elif self_recursive:
+            return compare_recursive(self_recursive, other_recursive, {}, self, other)
+        else:
+            return (super(Type, self).__eq__(other) or
+                    (self.is_typedef and self.type == other) or
+                    (other.is_typedef and other.type == self))
 
     def __ne__(self, other):
         return not isinstance(other, type(self)) or super(Type, self).__ne__(other)
@@ -19,9 +36,69 @@ class Type(object):
         return True
 
     def __hash__(self):
+        if self.is_struct:
+            return 0 # TODO: better hashing
         obj = tuple(tuple(c) if isinstance(c, list) else c for c in self)
         return hash(obj)
 
+
+def compare_recursive(rec1, rec2, mapping, t1, t2):
+    """Structural comparison of recursive types"""
+    cmp = partial(compare_recursive, rec1, rec2, mapping)
+
+    sub1 = subterms(t1)
+    sub2 = subterms(t2)
+
+    if id(t1) in rec1:
+        if id(t1) in mapping:
+            return mapping[id(t1)] == id(t2)
+
+        mapping[id(t1)] = id(t2)
+
+    if bool(sub1) ^ bool(sub2) or type(t1) != type(t2):
+        return False
+    elif not sub1:
+        return t1 == t2 # Unit types
+    elif t1.is_struct:
+        return (t1.names == t2.names and
+                all(starmap(cmp, zip(t1.types, t2.types))))
+    elif t1.is_function:
+        return (t1.varargs == t2.varargs and
+                cmp(t1.restype, t2.restype) and
+                all(starmap(cmp, zip(t1.argtypes, t2.argtypes))))
+    elif t1.is_vector or t1.is_array:
+        return t1.count == t2.count and cmp(t1.base, t2.base)
+    elif t1.is_pointer:
+        return cmp(t1.base, t2.base)
+
+
+def subterms(type):
+    if type.is_struct:
+        return type.types
+    elif type.is_pointer or type.is_vector or type.is_array:
+        return [type.base]
+    elif type.is_function:
+        return [type.restype] + list(type.argtypes)
+    else:
+        return []
+
+
+def recursive_terms(type, seen=None, recursive=None):
+    """Find all recursive terms in a type"""
+    if seen is None:
+        seen = set()
+        recursive = set()
+
+    if id(type) in seen:
+        recursive.add(id(type))
+        return recursive
+
+    seen.add(id(type))
+    for subterm in subterms(type):
+        recursive_terms(subterm, seen, recursive)
+    seen.remove(id(type))
+
+    return recursive
 
 def typetuple(name, elems):
     def __str__(self):

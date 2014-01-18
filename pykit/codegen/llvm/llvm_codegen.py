@@ -243,6 +243,7 @@ class Translator(object):
 
             for func_arg, arg, param in zip(function.args, args, lfunc.args):
                 if arg.type != param.type:
+                    import pdb; pdb.set_trace()
                     raise TypeError(
                         "Function %s called with type %s, "
                         "expected %s for argument %r" % (function.name,

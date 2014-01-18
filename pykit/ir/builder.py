@@ -60,7 +60,8 @@ class OpBuilder(_generated.GeneratedBuilder):
 
     def store(self, val, var, **kwds):
         assert var.type.is_pointer
-        assert val.type == var.type.base or var.type.base.is_opaque, (val.type, var.type, val, var)
+        assert val.type == var.type.base or var.type.base.is_opaque, (
+            str(val.type), str(var.type), val, var)
         return super(OpBuilder, self).store(val, var, **kwds)
 
     def call(self, type, func, args, **kwds):

@@ -14,13 +14,13 @@ from itertools import chain
 map    = lambda *args: list(builtins.map(*args))
 invert = lambda d: dict((v, k) for k, v in d.items())
 
-def nestedmap(f, args):
+def nestedmap(f, args, type=list):
     """
     Map `f` over `args`, which contains elements or nested lists
     """
     result = []
     for arg in args:
-        if isinstance(arg, list):
+        if isinstance(arg, type):
             result.append(list(map(f, arg)))
         else:
             result.append(f(arg))
@@ -55,6 +55,15 @@ def listify(f):
     def wrapper(*args, **kwargs):
         return list(f(*args, **kwargs))
     return wrapper
+
+@listify
+def listitems(fields):
+    """Turn [1, [2, 3], (4,)] into [[1], [2, 3], [4]]"""
+    for x in fields:
+        if not isinstance(x, (list, tuple)):
+            yield [x]
+        else:
+            yield list(x)
 
 @listify
 def prefix(iterable, prefix):

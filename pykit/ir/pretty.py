@@ -64,20 +64,32 @@ def fglobal(val):
 def fundef(val):
     return '((%s) Undef)' % (val.type,)
 
-def ftype(val):
+def ftype(val, seen=None):
     from pykit import types
+
     if not isinstance(val, types.Type):
         return str(val)
 
+    if seen is None:
+        seen = set()
+    if id(val) in seen:
+        return '...'
+
+    seen.add(id(val))
+
     if hashable(val) and val in types.type2name:
-        return types.type2name[val]
-    if val.is_struct:
-        args = ", ".join('%s:%s' % (name, ty)
+        result = types.type2name[val]
+    elif val.is_struct:
+        args = ", ".join('%s:%s' % (name, ftype(ty, seen))
                          for name, ty in zip(val.names, val.types))
-        return '{ %s }' % args
-    if val.is_pointer:
-        return "%s*" % (val.base,)
-    return repr(val)
+        result = '{ %s }' % args
+    elif val.is_pointer:
+        result ="%s*" % (ftype(val.base, seen),)
+    else:
+        result = repr(val)
+
+    seen.remove(id(val))
+    return result
 
 def fptr(val):
     return repr(val)
