@@ -46,7 +46,8 @@ def is_ctypes_struct_type(ctypes_type):
             issubclass(ctypes_type, ctypes.Structure))
 
 def is_ctypes_pointer_type(ctypes_type):
-    return isinstance(ctypes_type, _ctypes_pointer_type)
+    return (isinstance(ctypes_type, _ctypes_pointer_type) or
+            ctypes_type == ctypes.c_void_p)
 
 def is_ctypes_type(ctypes_type):
     return (
@@ -151,6 +152,6 @@ def from_ctypes_value(ctypes_value):
             names, values = ('dummy',), (Const(0, types.Int8))
         return Struct(names, values, from_ctypes_type(ctype))
     else:
-        assert is_ctypes_pointer_type(ctype)
+        assert is_ctypes_pointer_type(ctype), ctype
         return Pointer(ctypes.cast(ctypes_value, ctypes.c_void_p).value,
                        from_ctypes_type(ctype))

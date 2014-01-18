@@ -1,16 +1,33 @@
 from collections import namedtuple
-from pykit.utils import invert, hashable
+from pykit.utils import invert, hashable, listitems
 
 alltypes = set()
 
 class Type(object):
     """Base of types"""
 
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and
-                super(Type, self).__eq__(other) or
-                (self.is_typedef and self.type == other) or
-                (other.is_typedef and other.type == self))
+    def equals(self, other, seen=None):
+        if seen is None:
+            seen = set()
+
+        if (id(self), id(other)) in seen:
+            return True
+
+        seen.add((id(self), id(other)))
+
+        if isinstance(other, type(self)) and self.is_struct:
+            # Compare Structs
+            if self.names == other.names:
+                return all([ty1.equals(ty2, seen)
+                                for ty1, ty2 in zip(self.types, other.types)])
+            return False
+        elif isinstance(other, type(self)):
+            return compare_fields(self, other, seen)
+        else:
+            return ((self.is_typedef and self.type.equals(other, seen)) or
+                    (other.is_typedef and other.type.equals(self, seen)))
+
+    __eq__ = equals
 
     def __ne__(self, other):
         return not isinstance(other, type(self)) or super(Type, self).__ne__(other)
@@ -19,9 +36,34 @@ class Type(object):
         return True
 
     def __hash__(self):
+        if self.is_struct:
+            return 0 # TODO: better hashing
         obj = tuple(tuple(c) if isinstance(c, list) else c for c in self)
         return hash(obj)
 
+
+def compare_fields(ty1, ty2, seen):
+    """Compare fields of two potentially recursive types"""
+    assert len(ty1) == len(ty2)
+
+    for l1, l2 in zip(listitems(ty1), listitems(ty2)):
+        if len(l1) != len(l2):
+            return False
+        for t1, t2 in zip(l1, l2):
+            if (id(t1), id(t2)) in seen:
+                continue
+
+            seen.add((id(t1), id(t2)))
+            if isinstance(t1, list):
+                if not compare_fields(t1, t2, seen):
+                    return False
+            elif not isinstance(t1, Type) and not isinstance(t2, Type):
+                if t1 != t2:
+                    return False
+            elif not t1.equals(t2, seen):
+                return False
+
+    return True
 
 def typetuple(name, elems):
     def __str__(self):
