@@ -26,6 +26,7 @@ def unop(codegen, op, type):
         $restype func($type arg) {
             return $op arg;
         }""", restype=restype, type=type, op=op)
+
     cresult = f.run(codegen, 2)
     iresult = f.interp(2)
     assert cresult == iresult, (cresult, iresult)

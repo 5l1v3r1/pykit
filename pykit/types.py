@@ -17,6 +17,11 @@ class Type(object):
     """Base of types"""
 
     def __eq__(self, other):
+        incompatible = (type(self) != type(other) and not (self.is_typedef or
+                                                           other.is_typedef))
+        if not isinstance(other, Type) or incompatible:
+            return False
+
         self_recursive = recursive_terms(self)
         other_recursive = recursive_terms(other)
 
@@ -30,7 +35,7 @@ class Type(object):
                     (other.is_typedef and other.type == self))
 
     def __ne__(self, other):
-        return not isinstance(other, type(self)) or super(Type, self).__ne__(other)
+        return not (self == other)
 
     def __nonzero__(self):
         return True
