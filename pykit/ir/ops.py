@@ -79,63 +79,15 @@ constant           = op('constant/o')         # object pyval
 # ______________________________________________________________________
 # Variables
 
-alloca             = op('alloca/')
+alloca             = op('alloca/o')           # obj numItems [length of allocation implied by return type]
 load               = op('load/v')             # alloc var
 store              = op('store/vv')           # expr value, alloc var
-# phi is below
-
-# ______________________________________________________________________
-# Primitives
-
-# Arrays/lists
-map                = op('map/vlc')            # fn func, expr *arrays, const axes
-reduce             = op('reduce/vvc')         # fn func, expr array, const axes
-filter             = op('filter/vv')          # fn func, expr array
-scan               = op('scan/vvc')           # fn func, expr array, const axes
-zip                = op('zip/l')              # expr *arrays
-allpairs           = op('allpairs/vvc')       # fn func, expr array, const axes
-flatten            = op('flatten/v')          # expr array
-
-print              = op('print/v')            # expr value
-
-# ______________________________________________________________________
-# Containers
-
-# Arrays/lists/tuples/sets/dicts
-concat             = op('concat/l')           # expr *values
-length             = op('length/v')           # expr value
-contains           = op('contains/vv')        # expr item, expr container
-
-list_append        = op('list_append/vv')     # expr list, expr item
-list_pop           = op('list_pop/v')         # expr list
-
-set_add            = op('set_add/vv')         # expr set, expr value
-set_remove         = op('set_remove/vv')      # expr set, expr value
-
-dict_add           = op('dict_add/vvv')       # expr dict, expr key, expr value
-dict_remove        = op('dict_remove/vv')     # expr dict, expr key
-dict_keys          = op('dict_keys/v')        # expr dict
-dict_values        = op('dict_values/v')      # expr dict
-dict_items         = op('dict_items/v')       # expr dict
 
 # ______________________________________________________________________
 # Conversion
 
-box                = op('box/v')              # expr arg
-unbox              = op('unbox/v')            # expr arg
 convert            = op('convert/v')          # expr arg
-
-# ______________________________________________________________________
-# Constructors
-
-new_list           = op('new_list/l')         # expr *elems
-new_tuple          = op('new_tuple/l')        # expr *elems
-new_dict           = op('new_dict/ll')        # expr *keys, expr *values
-new_set            = op('new_set/l')          # expr *elems
-
-new_struct         = op('new_struct/l')       # expr *initializers
-new_data           = op('new_data/v')         # expr size
-new_exc            = op('new_exc/v*')         # str exc_name, expr *args
+bitcast            = op('bitcast/v')          # expr value
 
 # ______________________________________________________________________
 # Control flow
@@ -154,13 +106,13 @@ ret                = op('ret/o')              # expr result
 # ______________________________________________________________________
 # Functions
 
-function           = op('function/o')         # str funcname
-call               = op('call/v*')            # expr obj, expr *args
+call               = op('call/vl')            # expr obj, expr *args
 call_math          = op('call_math/ol')       # str name, expr *args
 
 # ______________________________________________________________________
 # sizeof
 
+addressof          = op('addressof/v')        # expr obj
 sizeof             = op('sizeof/v')           # expr obj
 
 # ______________________________________________________________________
@@ -168,9 +120,15 @@ sizeof             = op('sizeof/v')           # expr obj
 
 ptradd             = op('ptradd/vv')          # expr pointer, expr value
 ptrload            = op('ptrload/v')          # expr pointer
-ptrstore           = op('ptrstore/vv')        # expr pointer, expr value
+ptrstore           = op('ptrstore/vv')        # expr value, expr pointer
 ptrcast            = op('ptrcast/v')          # expr pointer
 ptr_isnull         = op('ptr_isnull/v')       # expr pointer
+
+# ______________________________________________________________________
+# Unified: Structs/Arrays/Objects/Vectors
+
+get                = op('get/vl')        # (expr value, list index)
+set                = op('set/vvl')       # (expr value, expr value, list index)
 
 # ______________________________________________________________________
 # Attributes
@@ -179,15 +137,15 @@ getfield           = op('getfield/vo')        # (expr value, str attr)
 setfield           = op('setfield/vov')       # (expr value, str attr, expr value)
 
 # ______________________________________________________________________
-# Indexing
+# Fields
 
-getindex           = op('getindex/vl')        # (expr value, expr *indices)
-setindex           = op('setindex/vlv')       # (expr value, expr *indices, expr value)
-getslice           = op('getslice/vl')        # (expr value, expr *indices)
-setslice           = op('setslice/vlv')       # (expr value, expr *indices, expr value)
+extractfield       = op('extractfield/vo')
+insertfield        = op('insertfield/vov')
 
-slice              = op('slice/vvv')          # (expr lower, expr upper, expr step)
-# newaxis            = 'newaxis'        # => const(None) ?
+# ______________________________________________________________________
+# Vectors
+
+shufflevector      = op('shufflevector/vvv')  # (expr vector0, expr vector1, expr vector2)
 
 # ______________________________________________________________________
 # Basic operators
@@ -220,59 +178,23 @@ ge                 = op('ge/vv')
 is_                = op('is_/vv')
 
 # ______________________________________________________________________
-# Threads
+# Exceptions
 
-threadpool_start   = op('threadpool_start/v')    # expr nthreads
-threadpool_submit  = op('threadpool_submit/vvl') # expr threadpool, fn function, expr *args
-threadpool_join    = op('threadpool_join/v')     # expr threadpool
-threadpool_close   = op('threadpool_close/v')    # expr threadpool
-thread_start       = op('thread_start/vl')       # fn function, expr *args
-thread_join        = op('thread_join/v')         # expr thread
+check_error        = op('check_error/vv')   # (expr arg, expr badval)
+new_exc            = op('new_exc/vv')       # (expr exc, expr? msg)
 
 # ______________________________________________________________________
 # Debugging
 
 print              = op('print/v')
 
-#===------------------------------------------------------------------===
-# Low-level IR
-#===------------------------------------------------------------------===
-
-# Low-level result:
-#   - no objects, arrays, complex numbers
-#   - no builtins
-#   - no frames
-#   - no map, reduce, scan, or yield
-
-check_overflow     = op('check_overflow/v')     # expr arg
-check_error        = op('check_error/vo')       # expr result, expr? badval
-
-addressof          = op('addressof/v')          # fn func
-
-exc_matches        = op('exc_matches/vv')       # expr exc, expr matcher
-store_tl_exc       = op('store_tl_exc/v')       # expr exc
-load_tl_exc        = op('load_tl_exc/')
-
-# ______________________________________________________________________
-# Garbage collection
-
-# Refcounting
-gc_gotref          = op('gc_gotref/v')        # expr arg
-gc_giveref         = op('gc_giveref/v')       # expr arg
-gc_incref          = op('gc_incref/v')        # expr obj
-gc_decref          = op('gc_decref/v')        # expr obj
-
-# GC
-gc_alloc           = op('gc_alloc/v')         # expr n
-gc_dealloc         = op('gc_dealloc/v')       # expr value
-
 # ______________________________________________________________________
 # Opcode utils
 
 import fnmatch
 
-void_ops = (print, store, store_tl_exc, check_overflow, check_error,
-            exc_setup, exc_catch, jump, cbranch, exc_throw, ret, setfield)
+void_ops = (print, store, ptrstore, exc_setup, exc_catch, jump, cbranch, exc_throw,
+            ret, setfield, check_error)
 
 is_leader     = lambda x: x in (phi, exc_setup, exc_catch)
 is_terminator = lambda x: x in (jump, cbranch, exc_throw, ret)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function, division, absolute_import
+import unittest
 
 from pykit.ir import defs
 from pykit.tests import *
@@ -7,11 +8,13 @@ from pykit.codegen.tests import codegens, llvm_codegen
 
 # ______________________________________________________________________
 
-unops = dict.fromkeys(defs.unary_defs, types.int_set | types.float_set)
+int_set = types.int_set - set([types.Int128, types.UInt128])
+
+unops = dict.fromkeys(defs.unary_defs, int_set | types.float_set)
 unops["!"] |= types.bool_set
 unops["~"] -= types.float_set
 
-binops = dict.fromkeys(defs.binary_defs, types.int_set | types.float_set)
+binops = dict.fromkeys(defs.binary_defs, int_set | types.float_set)
 for op in set(defs.bitwise) - set(["~"]):
     binops[op] -= types.float_set
 
@@ -23,6 +26,7 @@ def unop(codegen, op, type):
         $restype func($type arg) {
             return $op arg;
         }""", restype=restype, type=type, op=op)
+
     cresult = f.run(codegen, 2)
     iresult = f.interp(2)
     assert cresult == iresult, (cresult, iresult)
@@ -49,3 +53,7 @@ def load_tests(*args):
                     argstuples.append([codegen, c_op, type])
         mark_test(testfunc, argstuples, suite)
     return suite
+
+
+if __name__ == '__main__':
+    unittest.main()

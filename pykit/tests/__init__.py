@@ -4,7 +4,8 @@ from __future__ import print_function, division, absolute_import
 import unittest
 import collections
 
-from pykit import from_c, environment, types, pipeline
+from pykit import environment, types, pipeline
+from pykit.parsing import from_c
 from pykit.ir import *
 from pykit.analysis import cfa
 from pykit.utils import *

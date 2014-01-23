@@ -23,5 +23,6 @@ class TestCallgraph(SourceTestCase):
         assert f in G.successors(g)
         assert not G.successors(f)
 
+
 if __name__ == '__main__':
     unittest.main()

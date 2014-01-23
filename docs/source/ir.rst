@@ -36,30 +36,6 @@ Exceptions are supported through ``exc_setup``, ``exc_catch`` and
 The implementation is pluggable (costful/zero-cost, etc), and these opcodes
 are entirely optional. More on this can be read here: :ref:`lowering`.
 
-Primitives
-----------
-
-Like parakeet and copperhead, pykit has high-level data parallel operators,
-such as ``map``, ``reduce``, ``filter``, ``scan``, ``zip``, and ``allpairs``
-are provided for arrays and lists. This allows
-optimizations such as fusion and parallelization before scalarization takes
-place.
-
-Containers
-----------
-
-Lists, dicts, tuples and sets are supported. Basic operations are provided
-in the IR, and additional operations are deferred to calls to a runtime.
-The opcodes provided are there only since they expose hints for optimizations,
-see :ref:`container_opt`.
-
-Indexing and Slicing
---------------------
-
-Indexing is supported for containers (including arrays) and pointers.
-Slicing is supported for tuples, lists and arrays. Newaxis is supported
-for arrays.
-
 Attributes
 ----------
 
@@ -70,12 +46,6 @@ Conversion
 ----------
 
 The ``convert`` opcode converts its argument to the destination type.
-
-Iterators
----------
-
-Supported through ``iter`` and ``next`` on arrays, flattened arrays, lists,
-sets, dict keys, dict values and dict items.
 
 Functions
 ---------
@@ -94,21 +64,9 @@ handle this statically if possible, or otherwise rewrite the signature to
 take an explicit dictionary as argument if so desired (and star arguments
 through an explicit tuple).
 
-Closures
---------
-
-Pykit assumes closure conversion and lambda lifting has taken place. For
-dynamic binding of call variables it provides cell objects through
-``make_cell``, ``load_cell` and ``store_cell``.
-
 Pointers
 --------
 
 Supported pointer operations are ``add``, ``ptrload`` and ``ptrstore``.
 ``ptrcast`` casts the pointer to another pointer (this is distinguished from
 a data conversion).
-
-Threads
--------
-
-Supported are thread pools and individual threads.

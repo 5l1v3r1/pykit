@@ -7,6 +7,7 @@ An operation is
 
 from __future__ import print_function, division, absolute_import
 from itertools import chain
+from functools import partial
 from collections import defaultdict
 
 from pykit import error, types
@@ -19,6 +20,8 @@ from pykit.utils import (flatten, nestedmap, match, Delegate, traits, listify,
 class Value(object):
     __str__ = pretty
 
+    __slots__ = ()
+
 class Module(Value):
     """
     A module containing global values and functions. This defines the scope
@@ -27,6 +30,8 @@ class Module(Value):
         globals:    { global_name: GlobalValue }
         functions:  { func_name : Function }
     """
+
+    __slots__ = ('globals', 'functions', 'temp')
 
     def __init__(self, globals=None, functions=None, temper=None):
         self.globals = globals or {}
@@ -90,6 +95,9 @@ class Function(Value):
         allocate a temporary name
     """
 
+    __slots__ = ('module', 'name', 'type', 'temp', 'blocks', 'blockmap',
+                 'argnames', 'argdict', 'uses')
+
     def __init__(self, name, argnames, type, temper=None):
         self.module = None
         self.name = name
@@ -126,12 +134,21 @@ class Function(Value):
 
     def new_block(self, label, ops=None, after=None):
         """Create a new block with name `label` and append it"""
-        assert label not in self.blockmap, label
         label = self.temp(label)
         return self.add_block(Block(label, self, ops), after)
 
+    def add_arg(self, argname, argtype):
+        self.argnames.append(argname)
+        argtypes = tuple(self.type.argtypes) + (argtype,)
+        self.type = types.Function(self.type.restype, argtypes,
+                                   self.type.varargs)
+        return self.get_arg(argname)
+
     def add_block(self, block, after=None):
         """Add a Block at the end, or after `after`"""
+        assert block.name not in self.blockmap
+        self.temp(block.name) # Make sure this name is taken
+
         if block.parent is None:
             block.parent = self
         else:
@@ -194,6 +211,8 @@ class GlobalValue(Value):
     GlobalValue in a Module.
     """
 
+    __slots__ = ('module', 'name', 'type', 'external', 'address', 'value')
+
     def __init__(self, name, type, external=False, address=None, value=None):
         self.module = None
         self.name = name
@@ -218,12 +237,15 @@ class Block(Value):
     """
 
     head, tail = Delegate('ops'), Delegate('ops')
-    _prev, _next = None, None # LinkedList
+
+    __slots__ = ('name', 'parent', 'ops', '_prev', '_next')
 
     def __init__(self, name, parent=None, ops=None):
         self.name   = name
         self.parent = parent
         self.ops = LinkedList(ops or [])
+        self._prev = None
+        self._next = None
 
     @property
     def opcodes(self):
@@ -291,6 +313,8 @@ class Local(Value):
     Constants do not belong to any function.
     """
 
+    __slots__ = ()
+
     @property
     def function(self):
         """The Function owning this local value"""
@@ -317,6 +341,8 @@ class FuncArg(Local):
     """
     Argument to the function. Use Function.get_arg()
     """
+
+    __slots__ = ('parent', 'opcode', 'type', 'result')
 
     def __init__(self, func, name, type):
         self.parent = func
@@ -359,18 +385,31 @@ class Operation(Local):
         Operand values, e.g. [Operation("getindex", ...)
     """
 
-    # __slots__ = ("parent", "opcode", "type", "args", "result", "metadata",
-    #              "_prev", "_next")
+    __slots__ = ("parent", "opcode", "type", "args", "result", "metadata",
+                  "_prev", "_next", "_args", "_metadata")
 
-    def __init__(self, opcode, type, args, result=None, parent=None):
-        self.parent   = parent
-        self.opcode   = opcode
-        self.type     = type
+    def __init__(self, opcode, type, args, result=None, parent=None,
+                 metadata=None):
+        self.parent    = parent
+        self.opcode    = opcode
+        self.type      = type
         self._args     = args
-        self.result   = result
-        self.metadata = {}
-        self._prev    = None
-        self._next    = None
+        self.result    = result
+        self._metadata = None
+        self._prev     = None
+        self._next     = None
+        if metadata:
+            self.add_metadata(metadata)
+
+    def get_metadata(self):
+        if self._metadata is None:
+            self._metadata = {}
+        return self._metadata
+
+    def set_metadata(self, metadata):
+        self._metadata = metadata
+
+    metadata = property(get_metadata, set_metadata)
 
     @property
     def uses(self):
@@ -484,7 +523,7 @@ class Operation(Local):
         _del_args(self.function.uses, self, self.args)
         del self.function.uses[self]
         self.unlink()
-        self.result = None
+        self.result = "deleted(%s)" % (self.result,)
 
     def unlink(self):
         """Unlink from the basic block"""
@@ -570,6 +609,8 @@ class Constant(Value):
     (passes as a Struct).
     """
 
+    __slots__ = ('opcode', 'type', 'args', 'result')
+
     def __init__(self, pyval, type=None):
         self.opcode = ops.constant
         self.type = type or types.typeof(pyval)
@@ -587,26 +628,43 @@ class Constant(Value):
         const, = self.args
         return const
 
+    def __eq__(self, other):
+        return (isinstance(other, Constant) and self.type == other.type and
+                self.const == other.const)
+
     def __repr__(self):
-        return "constant(%s)" % (self.const,)
+        return "constant(%s, %s)" % (self.const, self.type)
 
 
-class Pointer(object):
+class Pointer(Value):
     """Pointer to constant value"""
 
-    def __init__(self, base):
-        self.base = base
+    __slots__ = ('addr', 'type')
+
+    def __init__(self, addr, type):
+        self.addr = addr
+        self.type = type
+
+    def __eq__(self, other):
+        return (isinstance(other, Pointer) and self.addr == other.addr and
+                self.type == other.type)
 
     def __repr__(self):
-        return "%s *" % (self.base,)
+        return "((%s) %s)" % (self.type, self.addr)
 
 
-class Struct(object):
+class Struct(Value):
     """Represents a constant Struct value"""
 
-    def __init__(self, names, values):
+    __slots__ = ('names', 'values', 'type')
+
+    def __init__(self, names, values, type):
         self.names = names
         self.values = values
+        self.type = type
+
+    def __eq__(self, other):
+        return isinstance(other, Struct) and self.names == other.names
 
     def __repr__(self):
         items = ", ".join("%s : %s" % (name, value)
@@ -617,14 +675,17 @@ class Struct(object):
 class Undef(Value):
     """Undefined value"""
 
+    __slots__ = ('type',)
+
     def __init__(self, type):
         self.type = type
 
-    def __eq__(self, other):
-        return isinstance(other, Undef) and self.type == other.type
-
-    def __hash__(self):
-        return hash(type(self))
+    #def __eq__(self, other):
+    #    return isinstance(other, Undef) and self.type == other.type
+    #
+    #def __hash__(self):
+    #    return hash(type(self))
 
 Op = Operation
 Const = Constant
+OConst = partial(Constant, type=types.Opaque)

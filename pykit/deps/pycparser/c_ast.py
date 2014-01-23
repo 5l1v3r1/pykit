@@ -154,21 +154,6 @@ class ArrayRef(Node):
 
     attr_names = ()
 
-class Template (Node):
-    def __init__(self, left, right, coord=None):
-        self.left = left
-        self.right = right
-        self.coord = coord
-
-    def children(self):
-        nodelist = []
-        if self.left is not None: nodelist.append(("left", self.left))
-        for i, child in enumerate(self.right or []):
-            nodelist.append(("right[%d]" % i, child))
-        return tuple(nodelist)
-
-    attr_names = ()
-
 class Assignment(Node):
     def __init__(self, op, lvalue, rvalue, coord=None):
         self.op = op

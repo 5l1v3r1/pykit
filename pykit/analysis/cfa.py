@@ -8,11 +8,15 @@ phi Operations in the IR.
 from __future__ import print_function, division, absolute_import
 import collections
 
-from pykit.ir import ops, Builder, Undef
-from pykit.analysis import defuse
+from pykit.ir import ops, Builder, Undef, Op, blocks
+from pykit.transform import dce
 from pykit.utils import mergedicts
 
 import networkx as nx
+
+#===------------------------------------------------------------------===
+# Data Flow
+#===------------------------------------------------------------------===
 
 def run(func, env=None):
     CFG = cfg(func)
@@ -25,10 +29,11 @@ def ssa(func, cfg):
     move_allocas(func, allocas)
     phis = insert_phis(func, cfg, allocas)
     compute_dataflow(func, cfg, allocas, phis)
-    prune_phis(func)
+    prune_phis(func, phis)
     simplify(func, cfg)
+    return phis
 
-def cfg(func):
+def cfg(func, view=False, exceptions=True):
     """
     Compute the control flow graph for `func`
     """
@@ -37,24 +42,14 @@ def cfg(func):
     for block in func.blocks:
         # -------------------------------------------------
         # Deduce CFG edges from block terminator
-        op = block.terminator
-        if op.opcode == 'jump':
-            targets = [op.args[0]]
-        elif op.opcode == 'cbranch':
-            cond, ifbb, elbb = op.args
-            targets = [ifbb, elbb]
-        elif op.opcode == 'ret':
-            targets = []
-        else:
-            assert op.opcode == ops.exc_throw # exc_throw
-            # Below we add all exception handlers as targets. There's nothing
-            # to do here (except add the exit block?)
+
+        targets = deduce_successors(block)
 
         # -------------------------------------------------
         # Deduce CFG edges from exc_setup
 
         for op in block.leaders:
-            if op.opcode == 'exc_setup':
+            if op.opcode == 'exc_setup' and exceptions:
                 [exc_handlers] = op.args
                 targets.extend(exc_handlers)
 
@@ -65,7 +60,26 @@ def cfg(func):
         for target in targets:
             cfg.add_edge(block, target)
 
+    if view:
+        import matplotlib.pyplot as plt
+        nx.draw(cfg)
+        plt.draw()
+
     return cfg
+
+def deduce_successors(block):
+    """Deduce the successors of a basic block"""
+    op = block.terminator
+    if op.opcode == 'jump':
+        successors = [op.args[0]]
+    elif op.opcode == 'cbranch':
+        cond, ifbb, elbb = op.args
+        successors = [ifbb, elbb]
+    else:
+        assert op.opcode in (ops.ret, ops.exc_throw)
+        successors = []
+
+    return successors
 
 def find_allocas(func):
     """
@@ -97,8 +111,7 @@ def insert_phis(func, cfg, allocas):
         if len(cfg.predecessors(block)) > 1:
             with builder.at_front(block):
                 for alloca in allocas:
-                    args = [[], []] # predecessors, incoming_values
-                    phi = builder.phi(alloca.type.base, args)
+                    phi = builder.phi(alloca.type.base, [], [])
                     phis[phi] = alloca
 
     return phis
@@ -154,14 +167,71 @@ def compute_dataflow(func, cfg, allocas, phis):
     for alloca in allocas:
         alloca.delete()
 
-def prune_phis(func):
+def prune_phis(func, phis):
     """Delete unnecessary phis (all incoming values equivalent)"""
+    # TODO: Exploit sparsity
+    changed = True
+    while changed:
+        changed = _prune_phis(func, phis)
+
+    prune_undef(func, phis)
+
+def _prune_phis(func, phis):
+    changed = []
+
+    def delete(op):
+        op.delete()
+        changed.append(op)
+        if op in phis:
+            # Pruning newly introduced phi, delete from phi map
+            del phis[op]
+
     for op in func.ops:
-        if op.opcode == 'phi' and not func.uses[op]:
-            op.delete()
-        elif op.opcode == 'phi' and  len(set(op.args[1])) == 1:
-            op.replace_uses(op.args[1][0])
-            op.delete()
+        if op.opcode == 'phi':
+            blocks, args = op.args
+            if not func.uses[op]:
+                delete(op)
+            elif len(set(args)) == 1:
+                [arg] = set(args)
+                op.replace_uses(arg)
+                delete(op)
+            elif len(args) == 2 and op in args:
+                [arg] = set(args) - set([op])
+                op.replace_uses(arg)
+                delete(op)
+
+    return bool(changed)
+
+def candidate(v):
+    return isinstance(v, Undef) or (isinstance(v, Op) and v.opcode == 'phi')
+
+def prune_undef(func, phis):
+    """
+    Prune cycles of dead phis which only have Undef inputs.
+    """
+    candidates = set()  # { phi }
+
+    for phi in phis:
+        blocks, values = phi.args
+        if all(candidate(val) for val in values):
+            candidates.add(phi)
+
+    n = 0
+    while n != len(candidates):
+        n = len(candidates)
+        for phi in list(candidates):
+            blocks, values = phi.args
+            for v in values:
+                if isinstance(v, Op):
+                    assert v.opcode == 'phi'
+                    if v not in candidates:
+                        candidates.remove(phi)
+                        break
+
+    for phi in candidates:
+        phi.set_args([])
+    for phi in candidates:
+        phi.delete()
 
 # ______________________________________________________________________
 
@@ -182,12 +252,15 @@ def compute_dominators(func, cfg):
     for block in func.blocks:
         dominators[block] = set(func.blocks)
 
+    blocks = list(cfg)
+    preds = dict((block, cfg.predecessors(block)) for block in blocks)
+
     # Solve equation
     changed = True
     while changed:
         changed = False
-        for block in cfg:
-            pred_doms = [dominators[pred] for pred in cfg.predecessors(block)]
+        for block in blocks:
+            pred_doms = [dominators[pred] for pred in preds[block]]
             new_doms = set([block]) | set.intersection(*pred_doms or [set()])
             if new_doms != dominators[block]:
                 dominators[block] = new_doms
@@ -195,7 +268,11 @@ def compute_dominators(func, cfg):
 
     return dominators
 
-# ______________________________________________________________________
+#===------------------------------------------------------------------===
+# Control Flow Simplification
+#===------------------------------------------------------------------===
+
+unmergable = ('exc_setup', 'exc_catch')
 
 def merge_blocks(func, pred, succ):
     """Merge two consecutive blocks (T2 transformation)"""
@@ -211,8 +288,47 @@ def simplify(func, cfg):
     child, the child one parent, and both have compatible instruction leaders.
     """
     for block in reversed(list(func.blocks)):
-        if len(cfg.predecessors(block)) == 1 and not list(block.leaders):
+        if (len(cfg.predecessors(block)) == 1 and not
+                any(l.opcode in unmergable for l in block.leaders)):
             [pred] = cfg.predecessors(block)
+            successors = cfg.neighbors(block)
             exc_block = any(op.opcode in ('exc_setup',) for op in pred.leaders)
             if not exc_block and len(cfg[pred]) == 1:
+                blocks.patch_phis(block, pred, successors)
                 merge_blocks(func, pred, block)
+                cfg.remove_edge(pred, block)
+                for succ in successors:
+                    cfg.remove_edge(block, succ)
+                    cfg.add_edge(pred, succ)
+
+#===------------------------------------------------------------------===
+# Block Removal
+#===------------------------------------------------------------------===
+
+def find_dead_blocks(func, cfg):
+    """Find all immediate dead blocks"""
+    return [block for block in cfg if not cfg.predecessors(block)
+                      if block != func.startblock]
+
+def delete_blocks(func, cfg, deadblocks):
+    """
+    Remove unreachable code blocks listed by `deadblocks`.
+    """
+    for block in deadblocks:
+        func.del_block(block)
+        for succ in cfg.successors(block):
+            # Remove CFG edge from dead block to successor
+            cfg.remove_edge(block, succ)
+
+            # Delete associated phis from successor blocks
+            for leader in succ.leaders:
+                if leader.opcode == 'phi':
+                    blocks, values = map(list, leader.args)
+                    while block in blocks:
+                        idx = blocks.index(block)
+                        blocks.remove(block)
+                        values.pop(idx)
+                    leader.set_args([blocks, values])
+
+    dce.dce(func)
+    simplify(func, cfg)

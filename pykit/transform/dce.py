@@ -4,25 +4,13 @@
 Dead code elimination.
 """
 
-from pykit.analysis import loop_detection
-
-effect_free = set([
-    'alloca', 'load', 'new_list', 'new_tuple', 'new_dict', 'new_set',
-    'new_struct', 'new_data', 'new_exc', 'phi', 'exc_setup', 'exc_catch',
-    'ptrload', 'ptrcast', 'ptr_isnull', 'getfield', 'getindex',
-    'add', 'sub', 'mul', 'div', 'mod', 'lshift', 'rshift', 'bitand', 'bitor',
-    'bitxor', 'invert', 'not_', 'uadd', 'usub', 'eq', 'ne', 'lt', 'le',
-    'gt', 'ge', 'is_', 'addressof',
-])
+from pykit.analysis import deadcode
 
 def dce(func, env=None):
     """
     Eliminate dead code.
-
-    TODO: Prune branches, dead loops
     """
-    for op in func.ops:
-        if op.opcode in effect_free and len(func.uses[op]) == 0:
-            op.delete()
+    for op in deadcode.identify_dead_ops(func):
+        op.delete()
 
 run = dce

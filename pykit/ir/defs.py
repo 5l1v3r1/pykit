@@ -70,7 +70,7 @@ compare = {
     ops.eq            : operator.eq,
     ops.ne            : operator.ne,
     ops.is_           : operator.is_,
-    ops.contains      : operator.contains,
+    #ops.contains      : operator.contains,
 }
 
 math_funcs = {

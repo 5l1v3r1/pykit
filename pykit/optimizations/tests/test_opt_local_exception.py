@@ -10,7 +10,7 @@ from pykit.optimizations import local_exceptions
 class TestLocalExceptionRewriting(unittest.TestCase):
 
     def test_exc_rewrite(self):
-        func = Function("foo", [], types.Function(types.Void, ()))
+        func = Function("foo", [], types.Function(types.Void, (), False))
         entry = func.new_block("entry")
         catch_block = func.new_block("catch")
         b = Builder(func)
@@ -22,9 +22,9 @@ class TestLocalExceptionRewriting(unittest.TestCase):
             b.exc_catch([Const(Exception, types.Exception)])
 
         local_exceptions.run(func, {})
-        print(func)
+        self.assertNotIn('exc_throw', opcodes(func))
 
 
 if __name__ == '__main__':
-    TestLocalExceptionRewriting('test_exc_rewrite').debug()
-    #unittest.main()
+    #TestLocalExceptionRewriting('test_exc_rewrite').debug()
+    unittest.main()

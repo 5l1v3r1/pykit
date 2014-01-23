@@ -18,9 +18,6 @@ It aims to be reusable for projects including:
     * NumbaPro
     * Your next awesome compiler
 
-If something in pykit somehow precludes reuse in any of the above projects,
-then pykit has failed and we need to fix that.
-
 Why not LLVM IR?
 ----------------
 
@@ -31,7 +28,7 @@ cons to doing that, below are some reasons why not to:
       the way we wish, without naming schemes, LLVM metadata, or external
       data
     * Instruction polymorphism the way we want it
-    * High-level types, such as arrays, complex numbers, objects, partial
-      functions etc, without opague type mappings
+    * Control over the types you want to support
+    * Pluggable optimizations
     * Simple arbitrary metadata through a key/value mechanism
     * No aborting, ever

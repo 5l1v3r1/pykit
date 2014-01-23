@@ -20,14 +20,14 @@ import numpy as np
 
 from pykit import types
 from pykit.ir import Function, Block, GlobalValue, Const, combine, ArgLoader
-from pykit.ir import ops, linearize, defs
+from pykit.ir import ops, linearize, defs, tracing
 from pykit.utils import ValueDict
 
 #===------------------------------------------------------------------===
 # Interpreter
 #===------------------------------------------------------------------===
 
-Undef = object()                        # Undefined/uninitialized value
+Undef = "Undef"                         # Undefined/uninitialized value
 State = namedtuple('State', ['refs'])   # State shared by stack frames
 
 class Reference(object):
@@ -64,7 +64,7 @@ class Interp(object):
         refs:           { id(obj) : Reference }
     """
 
-    def __init__(self, func, env, exc_model, argloader, state):
+    def __init__(self, func, env, exc_model, argloader, tracer):
         self.func = func
         self.env = env
         self.exc_model = exc_model
@@ -73,6 +73,7 @@ class Interp(object):
         self.state = {
             'env':       env,
             'exc_model': exc_model,
+            'tracer':    tracer,
         }
 
         self.ops, self.blockstarts = linearize(func)
@@ -82,14 +83,16 @@ class Interp(object):
         self.exc_handlers = None
         self.exception = None
 
-        self.refs = state.refs
-
     # __________________________________________________________________
     # Utils
 
     def incr_pc(self):
         """Increment program counter"""
         self.pc += 1
+
+    def decr_pc(self):
+        """Decrement program counter"""
+        self.pc -= 1
 
     def halt(self):
         """Stop interpreting"""
@@ -110,9 +113,32 @@ class Interp(object):
 
     pc = property(lambda self: self._pc, setpc, doc="Program Counter")
 
-    def blockswitch(self, oldblock, newblock):
+    def blockswitch(self, oldblock, newblock, valuemap):
         self.prevblock = oldblock
         self.exc_handlers = []
+
+        self.execute_phis(newblock, valuemap)
+
+    def execute_phis(self, block, valuemap):
+        """
+        Execute all phis in parallel, i.e. execute them before updating the
+        store.
+        """
+        new_values = {}
+        for op in block.leaders:
+            if op.opcode == 'phi':
+                new_values[op.result] = self.execute_phi(op)
+
+        valuemap.update(new_values)
+
+    def execute_phi(self, op):
+        for i, block in enumerate(op.args[0]):
+            if block == self.prevblock:
+                values = op.args[1]
+                return self.argloader.load_op(values[i])
+
+        raise RuntimeError("Previous block %r not a predecessor of %r!" %
+                                    (self.prevblock.name, op.block.name))
 
     noop = lambda *args: None
 
@@ -124,45 +150,30 @@ class Interp(object):
     def convert(self, arg):
         return types.convert(arg, self.op.type)
 
-    def check_overflow(self, value):
-        assert self.op.type.is_int
-        bits = self.op.type.bits / 2
-        lower = 2 ** -bits
-        upper = 2 ** bits - 1
-        if not lower <= value <= upper:
-            raise OverflowError(value, self.op, lower, upper)
-
     # __________________________________________________________________
     # Var
 
-    def alloca(self):
+    def alloca(self, numitems=None):
         return { 'value': Undef, 'type': self.op.type }
 
     def load(self, var):
-        assert var['value'] is not Undef, self.op
+        #assert var['value'] is not Undef, self.op
         return var['value']
 
     def store(self, value, var):
+        if isinstance(value, dict) and set(value) == set(['type', 'value']):
+            value = value['value']
         var['value'] = value
 
     def phi(self):
-        for i, block in enumerate(self.op.args[0]):
-            if block == self.prevblock:
-                values = self.op.args[1]
-                return self.argloader.load_op(values[i])
-
-        raise RuntimeError("Previous block %r not a predecessor of %r!" %
-                                    (self.prevblock.name, self.op.block.name))
+        "See execute_phis"
+        return self.argloader.load_op(self.op)
 
     # __________________________________________________________________
     # Functions
 
     def function(self, funcname):
         return self.func.module.get_function(funcname)
-
-    def partial(self, function, *args):
-        if isinstance(function, Function):
-            return lambda *more: self.call(function, *(args + more))
 
     def call(self, func, args):
         if isinstance(func, Function):
@@ -179,49 +190,18 @@ class Interp(object):
     def call_math(self, fname, *args):
         return defs.math_funcs[fname](*args)
 
-    def call_external(self):
-        pass
-
-    def call_virtual(self):
-        pass
-
     # __________________________________________________________________
     # Attributes
 
-    getfield = getattr
-    setfield = setattr
+    def getfield(self, obj, attr):
+        if obj['value'] is Undef:
+            return Undef
+        return obj['value'][attr] # structs are dicts
 
-    # __________________________________________________________________
-    # Index
-
-    getindex = operator.getitem
-    setindex = operator.setitem
-    getslice = operator.getitem
-    setslice = operator.setitem
-    slice = slice
-
-    # __________________________________________________________________
-    # Arrays
-
-    allpairs = product # hmm
-
-    def map(self, f, args, axes):
-        assert not axes # TODO
-        u = np.vectorize(f)
-        return u(*args)
-
-    def reduce(self, f, arg, axes):
-        assert not axes # TODO
-        if isinstance(arg, np.ndarray):
-            arg = arg.flatten()
-        return reduce(f, arg)
-
-    def scan(self, f, arg, axes):
-        assert not axes # TODO
-        result = arg.copy().flatten()
-        for i, x in enumerate(arg.flatten()[1:]):
-            result[i+1] = f(result[i], result[i+1])
-        return result
+    def setfield(self, obj, attr, value):
+        if obj['value'] is Undef:
+            obj['value'] = {}
+        obj['value'][attr] = value
 
     # __________________________________________________________________
 
@@ -230,14 +210,15 @@ class Interp(object):
     # __________________________________________________________________
     # Pointer
 
-    def ptradd(self, ptr, addition):
-        val = ctypes.cast(ptr, ctypes.c_void_p).value
-        return ctypes.cast(val, type(ptr))
+    def ptradd(self, ptr, addend):
+        value = ctypes.cast(ptr, ctypes.c_void_p).value
+        itemsize = ctypes.sizeof(type(ptr)._type_)
+        return ctypes.cast(value + itemsize * addend, type(ptr))
 
     def ptrload(self, ptr):
         return ptr[0]
 
-    def ptrstore(self, ptr, value):
+    def ptrstore(self, value, ptr):
         ptr[0] = value
 
     def ptr_isnull(self, ptr):
@@ -246,31 +227,6 @@ class Interp(object):
     def func_from_addr(self, ptr):
         type = self.op.type
         return ctypes.cast(ptr, types.to_ctypes(type))
-
-    # __________________________________________________________________
-    # iterators
-
-    getiter = iter
-
-    def next(self, it):
-        try:
-            return next(it)
-        except Exception as e:
-            self.exc_throw(e)
-
-    # __________________________________________________________________
-    # Primitives
-
-    max = max
-    min = min
-
-    # __________________________________________________________________
-    # Constructors
-
-    new_list    = list
-    new_tuple   = tuple
-    new_set     = set
-    new_dict    = lambda self, keys, values: dict(zip(keys, values))
 
     # __________________________________________________________________
     # Control flow
@@ -329,8 +285,11 @@ class Interp(object):
 
         for block in self.exc_handlers:
             for leader in block.leaders:
-                if (leader.opcode == ops.exc_catch and
-                        self._exc_match(leader.args)):
+                if leader.opcode != ops.exc_catch:
+                    continue
+
+                args = [arg.const for arg in leader.args[0]]
+                if self._exc_match(args):
                     return leader
 
     # __________________________________________________________________
@@ -342,87 +301,6 @@ class Interp(object):
     def yieldval(self, op):
         pass # TODO:
 
-    # __________________________________________________________________
-    # Closures
-
-    def make_cell(self):
-        return { 'cell': Undef }
-
-    def load_cell(self, cell):
-        assert cell['cell'] is not Undef
-        return cell['cell']
-
-    def store_cell(self, cell, value):
-        cell['cell'] = value
-
-    def make_frame(self, parent, names):
-        values = dict((name, Undef) for name in names)
-        values['_parent_frame'] = parent
-        return ValueDict(values)
-
-    # __________________________________________________________________
-    # Threads
-
-    thread_start      = noop
-    thread_join       = noop
-    threadpool_start  = noop
-    threadpool_submit = noop
-    threadpool_join   = noop
-    threadpool_close  = noop
-
-    def load_vtable(self, op):
-        pass
-
-    def vtable_lookup(self, op):
-        pass
-
-    # __________________________________________________________________
-    # GC/Refcounting
-
-    def _checkref(self, obj):
-        assert id(obj) in self.refs
-        ref = self.refs[id(obj)]
-        assert ref.obj is obj
-        assert ref.refcount >= 1
-
-    def gc_incref(self, obj):
-        self._checkref(obj)
-        ref = self.refs[id(obj)]
-        ref.refcount += 1
-
-    def gc_decref(self, obj):
-        self._checkref(obj)
-        ref = self.refs[id(obj)]
-        ref.refcount -= 1
-        if ref.refcount == 0:
-            del self.refs[id(obj)]
-
-    def gc_gotref(self, obj):
-        assert id(obj) not in self.refs
-        self.refs[id(obj)] = 1
-
-    def gc_giveref(self, obj):
-        self._checkref(obj)
-
-    def gc_alloc(self, n):
-        result = np.empty(n, dtype=np.object)
-        result[...] = Undef
-        return result
-
-    def gc_dealloc(self, value):
-        value[...] = Undef
-
-    def gc_collect(self, op):
-        pass
-
-    def gc_read_barrier(self, op):
-        pass
-
-    def gc_traverse(self, op):
-        pass
-
-    def gc_write_barrier(self, op):
-        pass
 
 # Set unary, binary and compare operators
 for opname, evaluator in chain(defs.unary.items(), defs.binary.items(),
@@ -437,6 +315,15 @@ class ExceptionModel(object):
     """
     Model that governs the exception hierarchy
     """
+
+    def exc_op_match(self, exc_type, op):
+        """
+        See whether `exception` matches `exc_type`
+        """
+        assert exc_type.opcode == 'constant'
+        if op.opcode == 'constant':
+            return self.exc_match(exc_type.const, op.const)
+        raise NotImplementedError("Dynamic exception checks")
 
     def exc_match(self, exc_type, exception):
         """
@@ -456,16 +343,6 @@ class ExceptionModel(object):
 # Run
 #===------------------------------------------------------------------===
 
-def _init_state(func, args):
-    """Initialize refcount state"""
-    refcounts = {}
-    return State(refcounts) # todo
-    for param, arg in zip(func.args, args):
-        if param.type.managed:
-            refcounts[id(arg)] = Reference(obj=arg, refcount=1, producer=param)
-
-    return State(refcounts)
-
 class InterpArgLoader(ArgLoader):
 
     def load_GlobalValue(self, arg):
@@ -475,44 +352,75 @@ class InterpArgLoader(ArgLoader):
     def load_Undef(self, arg):
         return Undef
 
-
-def run(func, env=None, exc_model=None, _state=None, args=()):
+def run(func, env=None, exc_model=None, _state=None, args=(),
+        tracer=tracing.DummyTracer()):
     """
     Interpret function. Raises UncaughtException(exc) for uncaught exceptions
     """
     assert len(func.args) == len(args)
 
+    tracer.push(tracing.Call(func, args))
+
+    # -------------------------------------------------
+    # Set up interpreter
+
+
     valuemap = dict(zip(func.argnames, args)) # { '%0' : pyval }
     argloader = InterpArgLoader(valuemap)
     interp = Interp(func, env, exc_model or ExceptionModel(),
-                    argloader, state=_state or _init_state(func, args))
+                    argloader, tracer)
     if env:
         handlers = env.get("interp.handlers") or {}
     else:
         handlers = {}
 
+    # -------------------------------------------------
+    # Eval loop
+
     curblock = None
     while True:
+        # -------------------------------------------------
+        # Block transitioning
+
         op = interp.op
         if op.block != curblock:
-            interp.blockswitch(curblock, op.block)
+            interp.blockswitch(curblock, op.block, valuemap)
             curblock = op.block
+
+        # -------------------------------------------------
+        # Find handler
 
         if op.opcode in handlers:
             fn = partial(handlers[op.opcode], interp)
         else:
             fn = getattr(interp, op.opcode)
 
+        # -------------------------------------------------
+        # Load arguments
+
         args = argloader.load_args(op)
 
+        # -------------------------------------------------
         # Execute...
+
+        tracer.push(tracing.Op(op, args))
+
         oldpc = interp.pc
-        result = fn(*args)
+        try:
+            result = fn(*args)
+        except UncaughtException, e:
+            tracer.push(tracing.Exc(e))
+            raise
         valuemap[op.result] = result
 
+        tracer.push(tracing.Res(op, args, result))
+
+        # -------------------------------------------------
         # Advance PC
+
         if oldpc == interp.pc:
             interp.incr_pc()
         elif interp.pc == -1:
             # Returning...
+            tracer.push(tracing.Ret(result))
             return result

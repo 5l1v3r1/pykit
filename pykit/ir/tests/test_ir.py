@@ -26,10 +26,14 @@ class TestIR(unittest.TestCase):
         for op in entry:
             if op.opcode == ops.convert:
                 r, = op.args
-                t = self.b.add(types.Int32, [r, r])
-                c = self.b.convert(types.Float32, [t], result=op.result)
+                t = self.b.add(r, r)
+                c = self.b.convert(types.Float32, t, result=op.result)
                 op.replace([t, c])
                 break
 
         cfa.run(self.f)
-        self.assertEqual(opcodes(self.f), ['mul', 'add', 'convert', 'ret'])
+        self.assertEqual(opcodes(self.f), ['mul', 'add', 'convert', 'convert', 'ret'])
+
+
+if __name__ == '__main__':
+    unittest.main()

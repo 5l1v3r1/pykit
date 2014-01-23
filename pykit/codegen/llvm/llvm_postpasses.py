@@ -17,14 +17,16 @@ def postpass_link_math(ee, lmod, lfunc):
     replacements = {}
     for lf in lmod.functions:
         if lf.name.startswith('pykit.math.'):
-            _, _, name = lf.name.partition('.')
+            _, _, name = lf.name.rpartition('.')
             replacements[lf.name] = name
     del lf # this is dead after linking below
 
-    default_math_lib = llvmmath.get_default_math_lib()
-    linker = linking.get_linker(default_math_lib)
-    linking.link_llvm_math_intrinsics(ee, lmod, default_math_lib,
-                                      linker, replacements)
+    if replacements:
+        default_math_lib = llvmmath.get_default_math_lib()
+        linker = linking.get_linker(default_math_lib)
+        linking.link_llvm_math_intrinsics(ee, lmod, default_math_lib,
+                                          linker, replacements)
+
     return lfunc
 
 # ______________________________________________________________________

@@ -7,8 +7,8 @@ Verify the validity of pykit IR.
 from __future__ import print_function, division, absolute_import
 import functools
 
-from pykit.types import (Boolean, Integral, Real, Struct, Pointer, Function,
-                         VoidT, resolve_typedef)
+from pykit.types import (Boolean, Integral, Real, Array, Struct, Pointer, Function,
+                         VoidT, Vector, resolve_typedef)
 from pykit.ir import Module, Function, Block, Value, Operation, Constant
 from pykit.ir import ops, visit, findallops, combine
 from pykit.utils import match
@@ -71,6 +71,12 @@ def verify_module(mod):
         verify_function(function)
 
 def verify_function(func):
+    try:
+        _verify_function(func)
+    except Exception as e:
+        raise VerifyError("Error verifying function %s: %s" % (func.name, e))
+
+def _verify_function(func):
     """Verify a pykit function"""
     # Verify arguments
     assert len(func.args) == len(func.type.argtypes)
@@ -79,7 +85,6 @@ def verify_function(func):
     restype = func.type.restype
     if not restype.is_void and not restype.is_opaque:
         rets = findallops(func, 'ret')
-        assert rets
         for ret in rets:
             arg, = ret.args
             assert arg.type == restype, (arg.type, restype)
@@ -144,7 +149,10 @@ def verify_op_syntax(op):
         elif expected == ops.Const:
             assert isinstance(arg, Constant), msg
         elif expected == ops.Value:
-            assert isinstance(arg, Value), msg
+            if op.opcode == "alloca":
+                assert arg is None or isinstance(arg, Value), msg
+            else:
+                assert isinstance(arg, Value), msg
         elif expected == ops.Any:
             assert isinstance(arg, (Value, list)), msg
         elif expected == ops.Obj:
@@ -201,4 +209,4 @@ def verify_lowlevel(func):
     """
     for op in func.ops:
         assert type(resolve_typedef(op.type)) in (
-            Boolean, Integral, Real, Struct, Pointer, Function, VoidT), op
+            Boolean, Array, Integral, Real, Struct, Pointer, Function, VoidT, Vector), op

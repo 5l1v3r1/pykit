@@ -108,6 +108,12 @@ class ArgLoader(object):
     def load_Constant(self, arg):
         return arg.const
 
+    def load_Pointer(self, arg):
+        return arg
+
+    def load_Struct(self, arg):
+        return arg
+
     def load_GlobalValue(self, arg):
         raise NotImplementedError
 

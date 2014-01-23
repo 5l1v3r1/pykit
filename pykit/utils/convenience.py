@@ -14,13 +14,13 @@ from itertools import chain
 map    = lambda *args: list(builtins.map(*args))
 invert = lambda d: dict((v, k) for k, v in d.items())
 
-def nestedmap(f, args):
+def nestedmap(f, args, type=list):
     """
     Map `f` over `args`, which contains elements or nested lists
     """
     result = []
     for arg in args:
-        if isinstance(arg, list):
+        if isinstance(arg, type):
             result.append(list(map(f, arg)))
         else:
             result.append(f(arg))
@@ -55,6 +55,15 @@ def listify(f):
     def wrapper(*args, **kwargs):
         return list(f(*args, **kwargs))
     return wrapper
+
+@listify
+def listitems(fields):
+    """Turn [1, [2, 3], (4,)] into [[1], [2, 3], [4]]"""
+    for x in fields:
+        if not isinstance(x, (list, tuple)):
+            yield [x]
+        else:
+            yield list(x)
 
 @listify
 def prefix(iterable, prefix):
@@ -93,8 +102,8 @@ class ValueDict(object):
 
 # ______________________________________________________________________
 
-def cached(f):
-    """Cache the result of the function"""
+def call_once(f):
+    """Cache the result of the function, so that it's called only once"""
     result = []
     def wrapper(*args, **kwargs):
         if len(result) == 0:
@@ -104,21 +113,44 @@ def cached(f):
         return result[0]
     return wrapper
 
-call_once = cached
+def cached(limit=1000):
+    """Cache the result for the arguments just once"""
+    def decorator(f):
+        cache = {}
+        def wrapper(*args):
+            if args not in cache:
+                if len(cache) > limit:
+                    cache.popitem()
+                cache[args] = f(*args)
+            return cache[args]
+        return wrapper
+    return decorator
 
 # ______________________________________________________________________
 
 def make_temper():
     """Return a function that returns temporary names"""
     temps = collections.defaultdict(int)
+    seen = set()
 
-    def temper(name=""):
-        varname = name.rstrip(string.digits)
+    def temper(input=""):
+        name, dot, tail = input.rpartition('.')
+        if tail.isdigit():
+            varname = name
+        else:
+            varname = input
+
         count = temps[varname]
         temps[varname] += 1
         if varname and count == 0:
-            return varname
-        return varname + str(count)
+            result = varname
+        else:
+            result = "%s.%d" % (varname, count)
+
+        assert result not in seen
+        seen.add(result)
+
+        return result
 
     return temper
 

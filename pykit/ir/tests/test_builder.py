@@ -43,17 +43,17 @@ class TestBuilder(unittest.TestCase):
 
     def setUp(self):
         self.f = Function("testfunc", ['a'],
-                          types.Function(types.Float32, [types.Int32]))
+                          types.Function(types.Float32, [types.Int32], False))
         self.b = Builder(self.f)
         self.b.position_at_end(self.f.new_block('entry'))
         self.a = self.f.get_arg('a')
 
     def test_basic_builder(self):
-        v = self.b.alloca(types.Pointer(types.Float32), [])
-        result = self.b.mul(types.Int32, [self.a, self.a], result='r')
-        c = self.b.convert(types.Float32, [result])
+        v = self.b.alloca(types.Pointer(types.Float32))
+        result = self.b.mul(self.a, self.a, result='r')
+        c = self.b.convert(types.Float32, result)
         self.b.store(c, v)
-        val = self.b.load(types.Float32, [v])
+        val = self.b.load(v)
         self.b.ret(val)
         # print(string(self.f))
         assert interp.run(self.f, args=[10]) == 100
@@ -61,14 +61,14 @@ class TestBuilder(unittest.TestCase):
     def test_splitblock(self):
         old, new = self.b.splitblock('newblock')
         with self.b.at_front(old):
-            self.b.add(types.Int32, [self.a, self.a])
+            self.b.add(self.a, self.a)
         with self.b.at_end(new):
-            self.b.div(types.Int32, [self.a, self.a])
+            self.b.div(self.a, self.a)
         self.assertEqual(opcodes(self.f), ['add', 'div'])
 
     def test_loop_builder(self):
-        square = self.b.mul(types.Int32, [self.a, self.a])
-        c = self.b.convert(types.Float32, [square])
+        square = self.b.mul(self.a, self.a)
+        c = self.b.convert(types.Float32, square)
         self.b.position_after(square)
         _, block = self.b.splitblock('start', terminate=True)
         self.b.position_at_end(block)
@@ -92,10 +92,10 @@ class TestBuilder(unittest.TestCase):
             %1 = phi([block1], [%0])
             ret %1
         """
-        square = self.b.mul(types.Int32, [self.a, self.a])
-        old, new = self.b.splitblock('newblock')
+        square = self.b.mul(self.a, self.a)
+        old, new = self.b.splitblock('newblock', terminate=True)
         with self.b.at_front(new):
-            phi = self.b.phi(types.Int32, [[self.f.startblock], [square]])
+            phi = self.b.phi(types.Int32, [self.f.startblock], [square])
             self.b.ret(phi)
 
         # Now split block1
@@ -105,3 +105,7 @@ class TestBuilder(unittest.TestCase):
         phi, ret = new.ops
         blocks, values = phi.args
         self.assertEqual(blocks, [split])
+
+
+if __name__ == '__main__':
+    unittest.main()

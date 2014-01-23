@@ -41,29 +41,61 @@ def fblock(block):
 
 def _farg(oparg):
     from pykit import ir
-    if isinstance(oparg, ir.Function):
-        return oparg.name
+
+    if isinstance(oparg, (ir.Function, ir.Block)):
+        return prefix(oparg.name)
+    elif isinstance(oparg, list):
+        return "[%s]" % ", ".join(_farg(arg) for arg in oparg)
+    elif isinstance(oparg, ir.Op):
+        return prefix(str(oparg.result))
     else:
         return str(oparg)
 
 def fop(op):
-    return '%{0} = ({1}) {2}({3})'.format(op.result, ftype(op.type), op.opcode,
-                                          ajoin(map(prefix, map(_farg, op.operands))))
+    body = "%s(%s)" % (op.opcode, ajoin(map(_farg, op.args)))
+    return '%%%-5s = %s -> %s' % (op.result, body, ftype(op.type))
 
 def fconst(c):
-    return 'const(%s, %s)' % (ftype(c.type), c.const)
+    return 'const(%s, %s)' % (c.const, ftype(c.type))
 
 def fglobal(val):
     return "global %{0} = {1}".format(val.name, ftype(val.type))
 
 def fundef(val):
-    return 'Undef'
+    return '((%s) Undef)' % (val.type,)
 
-def ftype(val):
+def ftype(val, seen=None):
     from pykit import types
+
+    if not isinstance(val, types.Type):
+        return str(val)
+
+    if seen is None:
+        seen = set()
+    if id(val) in seen:
+        return '...'
+
+    seen.add(id(val))
+
     if hashable(val) and val in types.type2name:
-        return types.type2name[val]
-    return str(val)
+        result = types.type2name[val]
+    elif val.is_struct:
+        args = ", ".join('%s:%s' % (name, ftype(ty, seen))
+                         for name, ty in zip(val.names, val.types))
+        result = '{ %s }' % args
+    elif val.is_pointer:
+        result ="%s*" % (ftype(val.base, seen),)
+    else:
+        result = repr(val)
+
+    seen.remove(id(val))
+    return result
+
+def fptr(val):
+    return repr(val)
+
+def fstruct(val):
+    return repr(val)
 
 
 formatters = {
@@ -75,4 +107,6 @@ formatters = {
     'Operation':   fop,
     'Constant':    fconst,
     'Undef':       fundef,
+    'Pointer':     fptr,
+    'Struct':      fstruct,
 }

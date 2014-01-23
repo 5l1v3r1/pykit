@@ -18,7 +18,7 @@ def run(func, env=None, return_block=None):
     # Allocate return variable
     if not func.type.restype.is_void:
         with b.at_front(func.startblock):
-            return_var = b.alloca(types.Pointer(func.type.restype), [])
+            return_var = b.alloca(types.Pointer(func.type.restype))
             b.store(Undef(func.type.restype), return_var)
     else:
         return_var = None
@@ -34,7 +34,7 @@ def run(func, env=None, return_block=None):
 
     with b.at_end(return_block):
         if return_var:
-            result = b.load(return_var.type.base, [return_var])
+            result = b.load(return_var)
         else:
             result = None
 

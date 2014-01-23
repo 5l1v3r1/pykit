@@ -44,7 +44,7 @@ def copy_module(module, temper=None):
 
     ### Copy Functions
     for name, func in module.functions.iteritems():
-        new_func = copy_function(func, module=new_module)
+        new_func, _ = copy_function(func, module=new_module)
         new_func.name = new_module.temp(name)
         new_module.add_function(new_func)
 
@@ -61,9 +61,8 @@ def copy_function(func, temper=None, module=None):
 
     ### Construct new Blocks
     for block in func.blocks:
-        new_block = Block(temper(block.name), f)
+        new_block = f.new_block(block.name)
         valuemap[block] = new_block
-        f.add_block(new_block)
 
     ### Construct new Operations
     for block in func.blocks:
@@ -90,4 +89,4 @@ def copy_function(func, temper=None, module=None):
             new_op = valuemap[old_op]
             new_op.set_args(nestedmap(lookup, old_op.args))
 
-    return f
+    return f, valuemap
