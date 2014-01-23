@@ -534,7 +534,7 @@ class Operation(Local):
 
     def add_metadata(self, metadata):
         if self.metadata is None:
-            self.metadata = metadata
+            self.metadata = dict(metadata)
         else:
             self.metadata.update(metadata)
 
