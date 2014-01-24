@@ -385,7 +385,7 @@ class Operation(Local):
         Operand values, e.g. [Operation("getindex", ...)
     """
 
-    __slots__ = ("parent", "opcode", "type", "args", "result", "metadata",
+    __slots__ = ("parent", "opcode", "type", "result",
                   "_prev", "_next", "_args", "_metadata")
 
     def __init__(self, opcode, type, args, result=None, parent=None,
