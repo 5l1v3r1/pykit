@@ -628,6 +628,9 @@ class Constant(Value):
         const, = self.args
         return const
 
+    def __hash__(self):
+        return hash((self.type, self.const))
+
     def __eq__(self, other):
         return (isinstance(other, Constant) and self.type == other.type and
                 self.const == other.const)
@@ -644,6 +647,9 @@ class Pointer(Value):
     def __init__(self, addr, type):
         self.addr = addr
         self.type = type
+
+    def __hash__(self):
+        return hash((self.type, self.addr))
 
     def __eq__(self, other):
         return (isinstance(other, Pointer) and self.addr == other.addr and
@@ -663,8 +669,12 @@ class Struct(Value):
         self.values = values
         self.type = type
 
+    def __hash__(self):
+        return hash((self.type, self.names, self.values))
+
     def __eq__(self, other):
-        return isinstance(other, Struct) and self.names == other.names
+        return (isinstance(other, Struct) and self.names == other.names and
+                self.values == other.values)
 
     def __repr__(self):
         items = ", ".join("%s : %s" % (name, value)
