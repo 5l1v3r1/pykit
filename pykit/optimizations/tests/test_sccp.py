@@ -92,6 +92,7 @@ class TestSparseConditionalConstantPropagation(unittest.TestCase):
                 if (y < x) {
                     x = 1;
                     x = x + 1;
+                    y = x - z;
                 }
             }
 
@@ -111,6 +112,54 @@ class TestSparseConditionalConstantPropagation(unittest.TestCase):
         assert op.opcode == 'ret'
         assert isinstance(op.args[0], Const)
         self.assertEqual(op.args[0].const, 6)
+
+    def test_ops(self):
+        source = textwrap.dedent("""
+        #include <pykit_ir.h>
+
+        Int32 f(Int32 i) {
+            Int32 x;
+
+            x = 2;
+
+            if (x < 3)
+                x = x + 1;
+            if (x <= 3)
+                x = x + 1;
+            if (x >= 3)
+                x = x + 1;
+            if (x >= 3)
+                x = x + 1;
+            if (x > 3)
+                x = x + 1;
+
+            return x;
+        }
+        """)
+
+        mod = from_c(source)
+        f = mod.get_function("f")
+        remove_convert(f)
+        cfa.run(f)
+        sccp.run(f)
+        verify(f)
+
+        # print(f)
+
+        # ops = list(f.ops)
+        # assert len(list(f.ops)) == 1
+        # [op] = ops
+        # assert op.opcode == 'ret'
+        # assert isinstance(op.args[0], Const)
+        # self.assertEqual(op.args[0].const, 7)
+
+
+def remove_convert(func):
+    """Remove dummy conversion ops"""
+    for op in func.ops:
+        if op.opcode == 'convert' and op.type == op.args[0].type:
+            op.replace_uses(op.args[0])
+            op.delete()
 
 if __name__ == '__main__':
     unittest.main()
