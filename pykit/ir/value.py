@@ -629,11 +629,11 @@ class Constant(Value):
         return const
 
     def __hash__(self):
-        return hash((self.type, self.const))
+        return hash(self.type) ^ 0xd662a8f
 
     def __eq__(self, other):
         return (isinstance(other, Constant) and self.type == other.type and
-                self.const == other.const)
+                id(self.const) == id(other.const))
 
     def __repr__(self):
         return "constant(%s, %s)" % (self.const, self.type)
