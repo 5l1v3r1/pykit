@@ -75,13 +75,13 @@ def sccp(func, constantfolder=None):
     constmap: A dict mapping Ops to Consts
     deadblock: A set of dead basic blocks
     """
-    # Object that folds operations with constant inputs
-    constantfolder = constantfolder or ConstantFolder()
-
     # Mapping of CFG edges (block1, block2) to indicate whether there exists
     # some runtime path from block1 to block2. Blocks without any incoming
     # runtime path are not explored.
     executable = defaultdict(bool)
+
+    # Object that folds operations with constant inputs
+    constantfolder = constantfolder or SCCPFolder(executable)
 
     # Control flow graph (networkx.DiGraph)
     cfg = cfa.cfg(func)
@@ -324,6 +324,18 @@ class ConstantFolder(object):
 
     # ^^ are these even used ? ^^ #
 
+
+class SCCPFolder(ConstantFolder):
+    """Handle phis when folding constants for SCCP"""
+
+    def __init__(self, executable):
+        self.executable = executable
+
+    def op_phi(self, op, cells):
+        blocks, args = op.args
+        return reduce(meet, [unwrap(cells[arg])
+                                 for block, arg in zip(blocks, args)
+                                     if self.executable[block, op.block]])
 
 #===------------------------------------------------------------------===
 # Apply Result of SCCP

@@ -146,12 +146,13 @@ class TestSparseConditionalConstantPropagation(unittest.TestCase):
 
         # print(f)
 
-        # ops = list(f.ops)
-        # assert len(list(f.ops)) == 1
-        # [op] = ops
-        # assert op.opcode == 'ret'
-        # assert isinstance(op.args[0], Const)
-        # self.assertEqual(op.args[0].const, 7)
+        ops = list(f.ops)
+
+        assert len(list(f.ops)) == 1
+        [op] = ops
+        assert op.opcode == 'ret'
+        assert isinstance(op.args[0], Const)
+        self.assertEqual(op.args[0].const, 7)
 
 
 def remove_convert(func):
