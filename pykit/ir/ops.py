@@ -99,7 +99,8 @@ exc_catch          = op('exc_catch/l')        # expr *types
 
 # Basic block terminators
 jump               = op('jump/v')             # block target
-cbranch            = op('cbranch/vvv')        # expr test, block true_target, block false_target)
+cbranch            = op('cbranch/vvv')        # (expr test, block true_target,
+                                              #  block false_target)
 exc_throw          = op('exc_throw/v')        # expr exc
 ret                = op('ret/o')              # expr result
 

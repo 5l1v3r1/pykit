@@ -200,6 +200,21 @@ class Function(Value):
         from pykit.analysis import defuse
         self.uses = defuse.defuse(self)
 
+    def delete_all(self, delete):
+        """
+        Delete all given operands, don't complain about uses from ops are that
+        to be deleted. For example:
+
+            %0 = myop(%arg0)
+            %1 = add(%0, %arg1)
+
+        delete = [%0, %1]
+        """
+        for op in delete:
+            op.set_args([])
+        for op in delete:
+            op.delete()
+
     # ______________________________________________________________________
 
     def __repr__(self):
