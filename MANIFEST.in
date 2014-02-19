@@ -1,0 +1,2 @@
+include *.md *.py *.txt CHANGELOG AUTHORS
+recursive-include docs *.ipynb *.txt *.py Makefile *.rst

@@ -40,7 +40,7 @@ setup(
     description="IR optimizer and lowerer",
     packages=find_packages(exclude=exclude_packages),
     package_data={
-        '': ['*.md', '*.cfg'],
+        '': ['*.md', '*.cfg', '*.py', '*.txt', 'LICENSE'],
         'pykit': ['*.txt'],
         'pykit.ir': ['*.h'],
         },
