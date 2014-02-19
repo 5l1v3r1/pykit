@@ -1,0 +1,23 @@
+Version 0.1
+-----------
+* Initial release
+* Core compiler analyses, optimizations
+* LLVM code generation
+* Pluggable IR (custom opcodes)
+* Simple type system (int, float, bool, pointer, struct, function, void)
+* C IR parser
+
+Version 0.2
+-----------
+* Add sparse condition constant propagation (SCCP) and constant folding
+* Out-of-SSA translation (reg2mem)
+* Add vector and array data types (thanks to Fil Mackay)
+* Add IR tracer
+* Support recursive types
+* ctypes -> pykit type
+* Fix inliner for exception blocks
+* Include custom pycparser
+* Preliminary C backend
+* Improve IR builder
+* Improve IR interpreter
+* Improve IR pretty printing
