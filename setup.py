@@ -9,6 +9,8 @@ if sys.version_info[:2] < (2, 6):
 
 from setup_helpers import find_packages, run_2to3, setup_args
 
+import pykit
+
 exclude_packages = ()
 cmdclass = {}
 
@@ -21,7 +23,7 @@ if sys.version_info[0] >= 3:
 
 setup(
     name="pykit",
-    version='0.1',
+    version=pykit.__version__,
     author="Continuum Analytics, Inc.",
     license="BSD",
     classifiers=[
