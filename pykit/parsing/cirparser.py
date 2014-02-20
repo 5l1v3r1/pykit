@@ -15,7 +15,8 @@ from functools import partial
 from collections import defaultdict, namedtuple
 
 from pykit import types
-from pykit.ir import defs, Module, Function, Builder, Const, GlobalValue, ops
+from pykit.ir import (defs, Module, Function, Builder, Const, GlobalValue,
+                      ops, Op)
 
 from pykit.deps.pycparser_special import preprocess_file, c_ast, CParser
 
@@ -304,7 +305,11 @@ class PykitIRVisitor(c_ast.NodeVisitor):
             if opcode in self.mod.functions:
                 func = self.mod.get_function(opcode)
                 return self.builder.call(type, func, args)
-            error(node, "No opcode %s" % (opcode,))
+
+            # error(node, "No opcode %s" % (opcode,))
+            op = Op(opcode, type or types.Opaque, args)
+            self.builder.emit(op)
+            return op
 
         buildop = getattr(self.builder, opcode)
         if ops.is_void(opcode):

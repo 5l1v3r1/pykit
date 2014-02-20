@@ -276,3 +276,136 @@ according to the type of the function:
     >>> cfunc = env["codegen.llvm.ctypes"]
     >>> cfunc(2.0)
     6.38905609893
+
+
+Constructing IR for Testing
+===========================
+For testing purposes, the aforementioned ways to construct IR are rather
+verbose. Instead, we can more quickly construct IR from C code:
+
+.. code-block:: python
+
+    simple = textwrap.dedent("""
+    #include <pykit_ir.h>
+
+    Int32 f(Int32 i) {
+        Int32 x, y, z;
+
+        x = 2;
+        y = 3;
+        z = 4;
+
+        if (x < y)
+            x = y;
+        else
+            x = i;
+
+        return x + z;
+    }
+    """)
+    mod = from_c(simple)
+    f = mod.get_function("f")
+    print(f)
+
+    # function Int32 f(Int32 %i) {
+    # entry:
+    #     %z     = alloca(None) -> Int32*
+    #     %y     = alloca(None) -> Int32*
+    #     %x     = alloca(None) -> Int32*
+    #     %i.1   = alloca(None) -> Int32*
+    #     %.0    = store(%i, %i.1) -> Void
+    #     %.1    = store(const(2, Int32), %x) -> Void
+    #     %.2    = store(const(3, Int32), %y) -> Void
+    #     %.3    = store(const(4, Int32), %z) -> Void
+    #     %.4    = load(%x) -> Int32
+    #     %.5    = load(%y) -> Int32
+    #     %.6    = lt(%.4, %.5) -> Bool
+    #     %.7    = cbranch(%.6, %if_block, %else_block) -> Void
+    #
+    # if_block:
+    #     %.8    = load(%y) -> Int32
+    #     %.9    = store(%.8, %x) -> Void
+    #     %.10   = jump(%Block.1) -> Void
+    #
+    # else_block:
+    #     %.11   = load(%i.1) -> Int32
+    #     %.12   = store(%.11, %x) -> Void
+    #     %.13   = jump(%Block.1) -> Void
+    #
+    # Block.1:
+    #     %.14   = load(%x) -> Int32
+    #     %.15   = load(%z) -> Int32
+    #     %.16   = add(%.14, %.15) -> Int32
+    #     %.17   = convert(%.16) -> Int32
+    #     %.18   = ret(%.17) -> Void
+    #
+    # }
+
+    cfa.run(f)
+    print(f)
+
+    # function Int32 f(Int32 %i) {
+    # entry:
+    #     %.6    = lt(const(2, Int32), const(3, Int32)) -> Bool
+    #     %.7    = cbranch(%.6, %if_block, %else_block) -> Void
+    #
+    # if_block:
+    #     %.10   = jump(%Block.1) -> Void
+    #
+    # else_block:
+    #     %.13   = jump(%Block.1) -> Void
+    #
+    # Block.1:
+    #     %.20   = phi([%else_block, %if_block], [%i, const(3, Int32)]) -> Int32
+    #     %.16   = add(%.20, const(4, Int32)) -> Int32
+    #     %.17   = convert(%.16) -> Int32
+    #     %.18   = ret(%.17) -> Void
+    #
+    # }
+
+    verify(f)
+
+    from pykit.optimizations import sccp
+
+    sccp.run(f)
+    print(f)
+
+    # function Int32 f(Int32 %i) {
+    # entry:
+    #     %.18   = ret(const(7, Int32)) -> Void
+    #
+    # }
+
+
+One may also use non-pykit opcodes. Further, the type of expressions must
+be specified, either through a cast, or by assignment to a variable:
+
+.. code-block:: python
+
+    simple = textwrap.dedent("""
+    #include <pykit_ir.h>
+
+    Int32 f(Int32 i) {
+        Int32 res = my_cool_op(i);
+        return res + (Int32) my_other_cool_op();
+    }
+    """)
+    mod = from_c(simple)
+    f = mod.get_function("f")
+    print(f)
+
+    # function Int32 f(Int32 %i) {
+    # entry:
+    #     %res   = alloca(None) -> Int32*
+    #     %i.1   = alloca(None) -> Int32*
+    #     %.0    = store(%i, %i.1) -> Void
+    #     %.1    = load(%i.1) -> Int32
+    #     %.2    = my_cool_op(%.1) -> Int32
+    #     %.3    = store(%.2, %res) -> Void
+    #     %.4    = load(%res) -> Int32
+    #     %.5    = my_other_cool_op() -> Int32
+    #     %.6    = add(%.4, %.5) -> Int32
+    #     %.7    = convert(%.6) -> Int32
+    #     %.8    = ret(%.7) -> Void
+    #
+    # }
