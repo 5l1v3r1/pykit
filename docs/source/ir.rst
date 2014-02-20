@@ -3,10 +3,40 @@ Pykit IR
 
 The pykit IR is a linear N-address code delineated through basic blocks,
 analogously to LLVM IR. It defines a set of opcodes, which specify what
-an operation does. Opcodes range from high-level such as container operations,
-to low-level operations such as pointer stores. Each operation has a type,
-and implicit coercions do not exists. Instead coercions need explicit
-conversions.
+an operation does.
+
+Any opcode can be used by a user, and pykit ships with a default set of
+opcodes to compile a core language to LLVM or C. The core set of opcodes
+deals with the following:
+
+    * control flow (branch, conditional branch, exceptions)
+        - `jump`, `cbranch`, `ret`, `exc_throw`, etc
+
+    * variables
+        - `alloca`, `load`, `store`
+
+    * SSA (`phi`)
+
+    * (SIMD) vectors
+        - `shufflevector`
+
+    * fixed-size arrays
+        - `getindex`, `setindex`
+
+    * attributes of structs
+        - `getfield` and `setfield`
+
+    * conversions between builtin data types
+        - `convert`
+
+    * core arithmetic, bitwise and logical operators
+        - `add`, `not`, `eq`, etc
+
+    * math (float and complex)
+
+
+Each operation has a type, and implicit coercions do not exists.
+Instead coercions can be represented through explicit conversions.
 
 Similarly to LLVM pykit comes with an ``alloca`` instruction that allocates
 an object on the stack, such as a scalar or a small array. The resulting

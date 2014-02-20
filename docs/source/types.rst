@@ -5,7 +5,8 @@ Pykit supports the following types:
 
     * Functions (as first-class values)
     * Integral and real numbers
-    * Structs and Unions
+    * Vectors and arrays
+    * Structs and todo: Unions
     * Pointers
 
 Additionally, pykit supports the notion of a Typedef, which allows a type to be

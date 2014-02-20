@@ -1,43 +1,39 @@
 Pykit pipeline
 ==============
 
-The input to pykit is a typed program in the form of a Module, consisting of
-a set of functions, global variables and external symbols.
+The input to pykit is a typed function inside a Module, which in turn
+consists of a set of functions, global variables and external symbols.
 
 The functions within the module go through successive transformations or
-stages defined by the pipeline. We can categorize stages as follows
-(similar to parakeet):
+stages defined by the pipeline. Pipelines are entirely configurable and
+optional. For instance, one may wish to simply use transformations and passes
+where suitable from an externally managed pipeline.
 
-    * High-level optimizations and analyses
-    * Lowering and scalarization
-    * Codegen
-
-Every stage in the pipeline is optional. The order is configurable. Entire
-stages can be skipped or overridden.
-
-High-level Optimizations and Analyses
--------------------------------------
+Analyses, transformations and Optimizations
+-------------------------------------------
 
 Transformations and optimizations:
 
-    * SSA/mem2reg
-
-    * Sparse conditional constant propagation
-    * Purity analysis
-    * Escape analysis
-    * Partial redundancy elimination
-    * Scalar replacement
+    * SSA: mem2reg and reg2mem
+    * Sparse conditional constant propagation, constant folding
+    * Call graph
+    * Loop detection
     * Inlining
+    * Dead code elimination
     * Exception analysis
 
-We need to perform these analyses on high-level code, since subsequent
-lowering transformations will reduce or preclude the effectiveness.
+These passes may be useful for use from other compilers. For instance, SCCP
+on a low-level code isn't necessarily useful since LLVM or a C compiler will
+perform that optimization.
+
+However, pykit allows folding of any type of  constant, and it may be useful
+to run such optimizations earlier in a pipeline before introducing code
+through lowering passes which can not easily (or possibly) be optimized.
 
 Codegen
 -------
 
-The code is in a low-level format by now, and can be easily used to generate
-code from. We are left with:
+The input to the code generators is a low-level IR that only contains:
 
     * Scalars operations (int, float, pointer, function)
     * Aggregate accesses (struct, union)
