@@ -7,10 +7,21 @@ Welcome to pykit's documentation!
 =================================
 
 .. include:: ../../README.md
-    :end-before: Why not LLVM IR
+    :end-before: Website
 
 Contents:
 ---------
+
+To get started with pykit, it may be good to start with the tutorial:
+
+.. toctree::
+    :titlesonly:
+    :maxdepth: 2
+
+    tutorial.rst
+
+Below is more information about what pykit is, what it can do and how it
+works.
 
 .. toctree::
     :titlesonly:
@@ -19,5 +30,4 @@ Contents:
     types.rst
     ir.rst
     pipeline.rst
-    runtime.rst
     faq.rst
