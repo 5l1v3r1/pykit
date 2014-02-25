@@ -31,7 +31,7 @@ We can create a function with a name and a signature:
     }
 
 
-Great, we just build an function that does nothing :). We can now start to
+Great, we just built a function that does nothing :). We can now start to
 populate it with some basic blocks and instructions. Lets make it add these
 numbers:
 
